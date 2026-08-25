@@ -25,6 +25,8 @@ import MyTracksScreen from '@/screens/MyTracksScreen';
 import GenreScreen from '@/screens/GenreScreen';
 import ProvinceScreen from '@/screens/ProvinceScreen';
 import NotificationsScreen from '@/screens/NotificationsScreen';
+import PlaylistScreen from '@/screens/PlaylistScreen';
+import StatsScreen from '@/screens/StatsScreen';
 import { useEffect, useState } from 'react';
 
 function SplashGate({ children }: { children: React.ReactNode }) {
@@ -74,6 +76,8 @@ function AppRoutes() {
         <Route path="/genero/:genero" element={<GenreScreen />} />
         <Route path="/provincia/:provincia" element={<ProvinceScreen />} />
         <Route path="/notificacoes" element={<NotificationsScreen />} />
+        <Route path="/playlist/:id" element={<PlaylistScreen />} />
+        <Route path="/estatisticas" element={<StatsScreen />} />
         <Route path="/definicoes" element={<SettingsScreen />} />
         <Route path="/sobre" element={<AboutScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Music, Settings, LogOut, ChevronRight, BadgeCheck, MapPin, Disc3, Upload } from 'lucide-react';
+import { Music, Settings, LogOut, ChevronRight, BadgeCheck, MapPin, Disc3, Upload, BarChart3 } from 'lucide-react';
 
 export default function ProfileScreen() {
   const navigate = useNavigate();
@@ -116,6 +116,17 @@ export default function ProfileScreen() {
                 <Disc3 size={18} className="text-amber-500" />
               </div>
               <span className="flex-1 text-left text-white font-medium">As minhas faixas</span>
+              <ChevronRight size={18} className="text-neutral-600" />
+            </button>
+
+            <button
+              onClick={() => navigate('/estatisticas')}
+              className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-neutral-900 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center">
+                <BarChart3 size={18} className="text-amber-500" />
+              </div>
+              <span className="flex-1 text-left text-white font-medium">Estatísticas</span>
               <ChevronRight size={18} className="text-neutral-600" />
             </button>
           </>

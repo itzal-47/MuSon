@@ -7,7 +7,7 @@ import { getAudioDuration } from '@/lib/tracks';
 import { GENEROS } from '@/types/database';
 import {
   ArrowLeft, Music, Upload, Image as ImageIcon, AlertCircle,
-  Check, Loader2, FileAudio, X,
+  Check, Loader2, FileAudio,
 } from 'lucide-react';
 
 const MAX_AUDIO_SIZE = 20 * 1024 * 1024; // 20MB

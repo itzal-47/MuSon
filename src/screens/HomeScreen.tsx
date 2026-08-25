@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { usePlayer } from '@/context/PlayerContext';
 import { fetchRecentTracks, fetchTrendingTracks } from '@/lib/tracks';
+import { fetchContinueListening } from '@/lib/playback';
 import type { TrackWithArtist } from '@/types/database';
 import TrackCard from '@/components/TrackCard';
-import { Music, TrendingUp, Sparkles, ChevronRight, Disc3 } from 'lucide-react';
+import { Music, TrendingUp, Sparkles, ChevronRight, Disc3, Play } from 'lucide-react';
 
 export default function HomeScreen() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
+  const { playTrack, seek } = usePlayer();
   const navigate = useNavigate();
   const [recent, setRecent] = useState<TrackWithArtist[]>([]);
   const [trending, setTrending] = useState<TrackWithArtist[]>([]);
   const [loading, setLoading] = useState(true);
+  const [continueItem, setContinueItem] = useState<{ track: TrackWithArtist; positionSeconds: number } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -21,6 +25,20 @@ export default function HomeScreen() {
       setLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setContinueItem(null);
+      return;
+    }
+    fetchContinueListening(user.id).then(setContinueItem);
+  }, [user]);
+
+  const handleResume = () => {
+    if (!continueItem) return;
+    playTrack(continueItem.track, [continueItem.track]);
+    setTimeout(() => seek(continueItem.positionSeconds), 400);
+  };
 
   return (
     <div className="min-h-screen bg-black pb-32">
@@ -44,6 +62,33 @@ export default function HomeScreen() {
         </div>
       ) : (
         <div className="space-y-8">
+          {continueItem && (
+            <section className="px-6">
+              <button
+                onClick={handleResume}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-neutral-900 border border-neutral-800 hover:border-amber-600/40 transition-colors text-left"
+              >
+                <div className="w-14 h-14 rounded-xl bg-neutral-800 overflow-hidden shrink-0 relative">
+                  {continueItem.track.capa_url ? (
+                    <img src={continueItem.track.capa_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Music size={20} className="text-neutral-600" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-neutral-500 text-xs mb-0.5">Continuar a ouvir</p>
+                  <p className="text-white font-medium text-sm truncate">{continueItem.track.titulo}</p>
+                  <p className="text-neutral-500 text-xs truncate">{continueItem.track.artist_name}</p>
+                </div>
+                <div className="w-10 h-10 rounded-full accent-gradient flex items-center justify-center shrink-0">
+                  <Play size={16} className="text-black ml-0.5" />
+                </div>
+              </button>
+            </section>
+          )}
+
           {/* Novidades */}
           <section>
             <div className="flex items-center justify-between px-6 mb-4">

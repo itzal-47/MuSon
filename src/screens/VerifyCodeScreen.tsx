@@ -7,7 +7,6 @@ export default function VerifyCodeScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const email = (location.state as { email?: string })?.email || '';
-  const mode = (location.state as { mode?: string })?.mode || 'registar';
   const { verifySignupCode } = useAuth();
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);

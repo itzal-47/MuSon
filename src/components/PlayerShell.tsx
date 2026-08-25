@@ -10,7 +10,7 @@ import {
   Repeat, Repeat1, ListMusic, GripVertical, X, BadgeCheck,
   MessageCircle, Flag, Send, Trash2,
 } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import ReportModal from '@/components/ReportModal';
 
 export default function PlayerShell() {

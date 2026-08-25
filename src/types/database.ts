@@ -133,6 +133,44 @@ export interface AppNotification {
   criado_em: string;
 }
 
+export interface Playlist {
+  id: string;
+  owner_id: string;
+  nome: string;
+  descricao: string | null;
+  capa_url: string | null;
+  publica: boolean;
+  colaborativa: boolean;
+  criado_em: string;
+  owner_name?: string;
+  track_count?: number;
+}
+
+export interface PlaylistTrack {
+  id: string;
+  playlist_id: string;
+  track_id: string;
+  adicionado_por: string;
+  posicao: number;
+  criado_em: string;
+}
+
+export interface PlaylistCollaborator {
+  playlist_id: string;
+  user_id: string;
+  criado_em: string;
+  username?: string | null;
+  display_name?: string | null;
+  avatar_url?: string | null;
+}
+
+export interface PlaybackState {
+  user_id: string;
+  track_id: string | null;
+  posicao_segundos: number;
+  atualizado_em: string;
+}
+
 export const GENERO_COLORS: Record<string, string> = {
   'Kuduro': 'from-red-600 to-orange-600',
   'Semba': 'from-amber-500 to-yellow-600',

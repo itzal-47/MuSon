@@ -9,6 +9,10 @@ import {
 } from 'react';
 import type { Track } from '@/types/database';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
+import { fetchTracksByIds } from '@/lib/tracks';
+import { saveQueueState, loadQueueState, clearQueueState } from '@/lib/queueStorage';
+import { savePlaybackState } from '@/lib/playback';
 
 export interface PlayerTrack extends Track {
   artist_name?: string;
@@ -60,6 +64,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     audioRef.current = new Audio();
   }
 
+  const { user } = useAuth();
+  const userRef = useRef(user);
+  userRef.current = user;
+
   const [currentTrack, setCurrentTrack] = useState<PlayerTrack | null>(null);
   const [queue, setQueue] = useState<PlayerTrack[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
@@ -71,6 +79,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState<RepeatMode>('none');
   const playedRef = useRef<string | null>(null);
+  const hydratedRef = useRef(false);
+  const pendingRestoreTimeRef = useRef(0);
+  const pendingSeekOnLoadRef = useRef(0);
 
   const registerPlay = useCallback((track: PlayerTrack) => {
     if (playedRef.current === track.id) return;
@@ -97,6 +108,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const playTrack = useCallback((track: PlayerTrack, newQueue?: PlayerTrack[]) => {
     playedRef.current = null;
+    pendingRestoreTimeRef.current = 0;
     if (newQueue && newQueue.length > 0) {
       let q = newQueue;
       if (shuffle) q = shuffleArray(newQueue);
@@ -151,6 +163,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const track = queue[nextIdx];
     setCurrentTrack(track);
     playedRef.current = null;
+    pendingRestoreTimeRef.current = 0;
     loadAndPlay(track);
   }, [queue, queueIndex, repeat, loadAndPlay, registerPlay]);
 
@@ -174,6 +187,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const track = queue[prevIdx];
     setCurrentTrack(track);
     playedRef.current = null;
+    pendingRestoreTimeRef.current = 0;
     loadAndPlay(track);
   }, [queue, queueIndex, repeat, loadAndPlay]);
 
@@ -248,14 +262,95 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setDuration(0);
     setExpanded(false);
     playedRef.current = null;
+    clearQueueState();
   }, []);
+
+  // Restaurar fila persistida ao carregar a app (sem tocar automaticamente)
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    hydratedRef.current = true;
+    const saved = loadQueueState();
+    if (!saved) return;
+
+    (async () => {
+      const tracks = await fetchTracksByIds(saved.trackIds);
+      const byId = new Map(tracks.map((t) => [t.id, t]));
+      const restoredQueue = saved.trackIds
+        .map((id) => byId.get(id))
+        .filter((t): t is Track => !!t) as PlayerTrack[];
+      if (restoredQueue.length === 0) return;
+
+      const idx = Math.min(saved.queueIndex, restoredQueue.length - 1);
+      setQueue(restoredQueue);
+      setQueueIndex(idx);
+      setCurrentTrack(restoredQueue[idx]);
+      setShuffle(saved.shuffle);
+      setRepeat(saved.repeat);
+      pendingRestoreTimeRef.current = saved.currentTime || 0;
+      setCurrentTime(saved.currentTime || 0);
+
+      const audio = audioRef.current;
+      const track = restoredQueue[idx];
+      if (audio && track.audio_url) {
+        pendingSeekOnLoadRef.current = saved.currentTime || 0;
+        audio.src = track.audio_url;
+        audio.currentTime = saved.currentTime || 0; // melhor esforço imediato
+        audio.load();
+      }
+      // Nunca reproduzir automaticamente ao restaurar — fica pausado, pronto a retomar
+      setIsPlaying(false);
+    })();
+  }, []);
+
+  // Persistir a fila (localStorage) sempre que muda
+  useEffect(() => {
+    if (queue.length === 0) {
+      clearQueueState();
+      return;
+    }
+    saveQueueState({
+      trackIds: queue.map((t) => t.id),
+      queueIndex,
+      currentTime: pendingRestoreTimeRef.current,
+      shuffle,
+      repeat,
+    });
+  }, [queue, queueIndex, shuffle, repeat]);
+
+  // Guardar a posição atual periodicamente (localStorage sempre; base de dados se autenticado)
+  useEffect(() => {
+    if (!isPlaying || !currentTrack) return;
+    const interval = setInterval(() => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      pendingRestoreTimeRef.current = audio.currentTime;
+      saveQueueState({
+        trackIds: queue.map((t) => t.id),
+        queueIndex,
+        currentTime: audio.currentTime,
+        shuffle,
+        repeat,
+      });
+      const uid = userRef.current?.id;
+      if (uid && currentTrack) {
+        savePlaybackState(uid, currentTrack.id, audio.currentTime).catch(() => undefined);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isPlaying, currentTrack, queue, queueIndex, shuffle, repeat]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const onTime = () => setCurrentTime(audio.currentTime);
-    const onDur = () => setDuration(audio.duration || 0);
+    const onDur = () => {
+      setDuration(audio.duration || 0);
+      if (pendingSeekOnLoadRef.current > 0) {
+        audio.currentTime = pendingSeekOnLoadRef.current;
+        pendingSeekOnLoadRef.current = 0;
+      }
+    };
     const onEnd = () => {
       if (repeat === 'track') {
         audio.currentTime = 0;
