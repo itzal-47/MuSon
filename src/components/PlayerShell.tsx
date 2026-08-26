@@ -8,10 +8,11 @@ import {
   Play, Pause, SkipForward, SkipBack, ChevronDown,
   Music, Heart, Share2, Volume2, Shuffle,
   Repeat, Repeat1, ListMusic, GripVertical, X, BadgeCheck,
-  MessageCircle, Flag, Send, Trash2,
+  MessageCircle, Flag, Send, Trash2, Loader2,
 } from 'lucide-react';
 import { useState, useRef } from 'react';
 import ReportModal from '@/components/ReportModal';
+import { shareOrDownloadTrackCard } from '@/lib/shareCard';
 
 export default function PlayerShell() {
   const {
@@ -43,9 +44,21 @@ export default function PlayerShell() {
   const [showComments, setShowComments] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [showReport, setShowReport] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const likeHook = useLike(currentTrack?.id);
   const commentHook = useComments(currentTrack?.id);
+
+  const handleShare = async () => {
+    if (!currentTrack || sharing) return;
+    setSharing(true);
+    await shareOrDownloadTrackCard({
+      titulo: currentTrack.titulo,
+      artist_name: currentTrack.artist_name,
+      capa_url: currentTrack.capa_url,
+    });
+    setSharing(false);
+  };
 
   if (!currentTrack) return null;
 
@@ -287,8 +300,12 @@ export default function PlayerShell() {
                       className="w-24 accent-amber-500"
                     />
                   </div>
-                  <button className="text-white/60 hover:text-white transition-colors">
-                    <Share2 size={20} />
+                  <button
+                    onClick={handleShare}
+                    disabled={sharing}
+                    className="text-white/60 hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    {sharing ? <Loader2 size={20} className="animate-spin" /> : <Share2 size={20} />}
                   </button>
                 </div>
               </>

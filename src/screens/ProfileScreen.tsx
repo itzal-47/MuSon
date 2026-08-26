@@ -1,10 +1,18 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Music, Settings, LogOut, ChevronRight, BadgeCheck, MapPin, Disc3, Upload, BarChart3 } from 'lucide-react';
+import { fetchStreak, type StreakInfo } from '@/lib/streaks';
+import { Music, Settings, LogOut, ChevronRight, BadgeCheck, MapPin, Disc3, Upload, BarChart3, Flame } from 'lucide-react';
 
 export default function ProfileScreen() {
   const navigate = useNavigate();
   const { profile, user, signOut } = useAuth();
+  const [streak, setStreak] = useState<StreakInfo | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchStreak(user.id).then(setStreak);
+  }, [user]);
 
   if (!user) {
     return (
@@ -74,6 +82,20 @@ export default function ProfileScreen() {
 
         {profile?.bio && (
           <p className="text-neutral-300 text-sm mt-4">{profile.bio}</p>
+        )}
+
+        {streak && streak.dias_seguidos > 0 && (
+          <div className="mt-4 flex items-center gap-3 p-3 rounded-xl bg-neutral-900 border border-neutral-800">
+            <div className="w-10 h-10 rounded-full accent-gradient flex items-center justify-center shrink-0 glow-accent-sm">
+              <Flame size={18} className="text-black" />
+            </div>
+            <div className="flex-1">
+              <p className="text-white font-bold text-sm">{streak.dias_seguidos} {streak.dias_seguidos === 1 ? 'dia seguido' : 'dias seguidos'} a ouvir</p>
+              {streak.melhor_streak > streak.dias_seguidos && (
+                <p className="text-neutral-500 text-xs">O teu recorde é {streak.melhor_streak} dias</p>
+              )}
+            </div>
+          </div>
         )}
 
         <div className="flex gap-3 mt-6">

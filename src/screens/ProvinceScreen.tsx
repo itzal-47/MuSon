@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchProfilesByProvincia } from '@/lib/tracks';
-import { ArrowLeft, MapPin, Music, BadgeCheck, ChevronDown } from 'lucide-react';
+import { fetchProvinceRadioQueue } from '@/lib/radio';
+import { usePlayer } from '@/context/PlayerContext';
+import { ArrowLeft, MapPin, Music, BadgeCheck, ChevronDown, Radio, Loader2 } from 'lucide-react';
 
 interface ProfileResult {
   id: string;
@@ -16,9 +18,12 @@ interface ProfileResult {
 export default function ProvinceScreen() {
   const { provincia } = useParams<{ provincia: string }>();
   const navigate = useNavigate();
+  const { playTrack } = usePlayer();
   const [artists, setArtists] = useState<ProfileResult[]>([]);
   const [producers, setProducers] = useState<ProfileResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingRadio, setLoadingRadio] = useState(false);
+  const [radioEmpty, setRadioEmpty] = useState(false);
 
   const decodedProvincia = provincia ? decodeURIComponent(provincia) : '';
 
@@ -35,6 +40,20 @@ export default function ProvinceScreen() {
     });
   }, [decodedProvincia]);
 
+  const handlePlayRadio = async () => {
+    if (!decodedProvincia || loadingRadio) return;
+    setLoadingRadio(true);
+    setRadioEmpty(false);
+    const queue = await fetchProvinceRadioQueue(decodedProvincia);
+    setLoadingRadio(false);
+    if (queue.length === 0) {
+      setRadioEmpty(true);
+      setTimeout(() => setRadioEmpty(false), 3000);
+      return;
+    }
+    playTrack(queue[0], queue);
+  };
+
   return (
     <div className="min-h-screen bg-black pb-32">
       {/* Header */}
@@ -46,16 +65,31 @@ export default function ProvinceScreen() {
         >
           <ArrowLeft size={20} />
         </button>
-        <div className="absolute bottom-4 left-6">
-          <p className="text-white/70 text-xs uppercase tracking-wider mb-1">Província</p>
-          <h1 className="text-3xl font-black text-white flex items-center gap-2">
-            <MapPin size={28} className="text-amber-500" />
-            {decodedProvincia}
-          </h1>
+        <div className="absolute bottom-4 left-6 right-6 flex items-end justify-between">
+          <div>
+            <p className="text-white/70 text-xs uppercase tracking-wider mb-1">Província</p>
+            <h1 className="text-3xl font-black text-white flex items-center gap-2">
+              <MapPin size={28} className="text-amber-500" />
+              {decodedProvincia}
+            </h1>
+          </div>
+          <button
+            onClick={handlePlayRadio}
+            disabled={loadingRadio}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full accent-gradient text-black font-bold text-sm glow-accent-sm disabled:opacity-60 shrink-0"
+          >
+            {loadingRadio ? <Loader2 size={16} className="animate-spin" /> : <Radio size={16} />}
+            Rádio
+          </button>
         </div>
       </div>
 
       <div className="px-6 pt-6">
+        {radioEmpty && (
+          <div className="mb-4 rounded-xl bg-amber-600/10 border border-amber-600/30 px-4 py-3 text-amber-400 text-sm text-center">
+            Ainda não há faixas publicadas de artistas de {decodedProvincia}.
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />

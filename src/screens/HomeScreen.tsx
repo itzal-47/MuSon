@@ -121,8 +121,11 @@ export default function HomeScreen() {
                 <h2 className="text-lg font-bold text-white">Em alta</h2>
               </div>
               {trending.length > 0 && (
-                <button className="text-neutral-500 text-xs flex items-center gap-1 hover:text-amber-500 transition-colors">
-                  Ver tudo <ChevronRight size={14} />
+                <button
+                  onClick={() => navigate('/charts')}
+                  className="text-neutral-500 text-xs flex items-center gap-1 hover:text-amber-500 transition-colors"
+                >
+                  Ver charts <ChevronRight size={14} />
                 </button>
               )}
             </div>

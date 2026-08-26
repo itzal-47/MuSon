@@ -13,6 +13,8 @@ import { useAuth } from '@/context/AuthContext';
 import { fetchTracksByIds } from '@/lib/tracks';
 import { saveQueueState, loadQueueState, clearQueueState } from '@/lib/queueStorage';
 import { savePlaybackState } from '@/lib/playback';
+import { registerListenForStreak } from '@/lib/streaks';
+import { cacheTrackForOffline, getCachedAudioBlobUrl, getDataSaverEnabled } from '@/lib/offlineCache';
 
 export interface PlayerTrack extends Track {
   artist_name?: string;
@@ -82,24 +84,44 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const hydratedRef = useRef(false);
   const pendingRestoreTimeRef = useRef(0);
   const pendingSeekOnLoadRef = useRef(0);
+  const cachedRef = useRef<string | null>(null);
 
   const registerPlay = useCallback((track: PlayerTrack) => {
     if (playedRef.current === track.id) return;
     playedRef.current = track.id;
-    Promise.resolve(supabase.from('track_plays').insert({ track_id: track.id }))
+    const uid = userRef.current?.id;
+    Promise.resolve(supabase.from('track_plays').insert({ track_id: track.id, user_id: uid || null }))
       .then(() => undefined)
       .catch(() => undefined);
+    if (uid) {
+      registerListenForStreak(uid).catch(() => undefined);
+    }
   }, []);
+
+  const loadTokenRef = useRef(0);
 
   const loadAndPlay = useCallback((track: PlayerTrack) => {
     const audio = audioRef.current;
     if (!audio) return;
+    cachedRef.current = null;
+    const token = ++loadTokenRef.current;
+
     if (track.audio_url) {
-      audio.src = track.audio_url;
-      audio.play().then(() => {
-        setIsPlaying(true);
-        registerPlay(track);
-      }).catch(() => setIsPlaying(false));
+      audio.preload = getDataSaverEnabled() ? 'metadata' : 'auto';
+      (async () => {
+        // Prefere o cache offline se a faixa já lá estiver (poupa dados e funciona sem rede)
+        const cachedUrl = await getCachedAudioBlobUrl(track);
+        if (loadTokenRef.current !== token) return; // já avançou para outra faixa entretanto
+        audio.src = cachedUrl || track.audio_url!;
+        try {
+          await audio.play();
+          if (loadTokenRef.current !== token) return;
+          setIsPlaying(true);
+          registerPlay(track);
+        } catch {
+          if (loadTokenRef.current === token) setIsPlaying(false);
+        }
+      })();
     } else {
       setIsPlaying(true);
       registerPlay(track);
@@ -343,7 +365,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const onTime = () => setCurrentTime(audio.currentTime);
+    const onTime = () => {
+      setCurrentTime(audio.currentTime);
+      // Guarda a faixa em cache offline temporário depois de ouvida a sério (15s+),
+      // evitando cachear faixas em que a pessoa só passou por cima
+      if (currentTrack && audio.currentTime > 15 && cachedRef.current !== currentTrack.id) {
+        cachedRef.current = currentTrack.id;
+        cacheTrackForOffline(currentTrack).catch(() => undefined);
+      }
+    };
     const onDur = () => {
       setDuration(audio.duration || 0);
       if (pendingSeekOnLoadRef.current > 0) {
@@ -359,16 +389,30 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       }
       next();
     };
+    const onError = () => {
+      // Se a rede falhar (ex: sem internet), tenta recuperar do cache offline
+      if (!currentTrack || !currentTrack.audio_url) return;
+      getCachedAudioBlobUrl(currentTrack).then((cachedUrl) => {
+        if (cachedUrl && audio.src !== cachedUrl) {
+          audio.src = cachedUrl;
+          audio.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+        } else {
+          setIsPlaying(false);
+        }
+      });
+    };
 
     audio.addEventListener('timeupdate', onTime);
     audio.addEventListener('loadedmetadata', onDur);
     audio.addEventListener('ended', onEnd);
+    audio.addEventListener('error', onError);
     return () => {
       audio.removeEventListener('timeupdate', onTime);
       audio.removeEventListener('loadedmetadata', onDur);
       audio.removeEventListener('ended', onEnd);
+      audio.removeEventListener('error', onError);
     };
-  }, [next, repeat]);
+  }, [next, repeat, currentTrack]);
 
   return (
     <PlayerContext.Provider

@@ -4,10 +4,11 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import {
   ArrowLeft, User, Bell, Palette, Shield, ChevronRight,
-  AlertCircle, LogOut, Trash2,
+  AlertCircle, LogOut, Trash2, Wifi, Download,
 } from 'lucide-react';
+import { getDataSaverEnabled, setDataSaverEnabled, getOfflineCacheInfo, clearOfflineCache } from '@/lib/offlineCache';
 
-type Section = 'conta' | 'notificacoes' | 'aparicao' | 'privacidade';
+type Section = 'conta' | 'notificacoes' | 'aparicao' | 'privacidade' | 'dados';
 
 export default function SettingsScreen() {
   const navigate = useNavigate();
@@ -20,6 +21,22 @@ export default function SettingsScreen() {
     marketing: false,
   });
   const [error, setError] = useState<string | null>(null);
+  const [dataSaver, setDataSaver] = useState(getDataSaverEnabled());
+  const [cacheInfo, setCacheInfo] = useState(getOfflineCacheInfo());
+  const [clearingCache, setClearingCache] = useState(false);
+
+  const handleToggleDataSaver = () => {
+    const next = !dataSaver;
+    setDataSaver(next);
+    setDataSaverEnabled(next);
+  };
+
+  const handleClearCache = async () => {
+    setClearingCache(true);
+    await clearOfflineCache();
+    setCacheInfo(getOfflineCacheInfo());
+    setClearingCache(false);
+  };
 
   const handleDeleteAccount = async () => {
     setError(null);
@@ -36,6 +53,7 @@ export default function SettingsScreen() {
   const sections: { id: Section; label: string; icon: typeof User; desc: string }[] = [
     { id: 'conta', label: 'Conta', icon: User, desc: 'Editar dados, eliminar conta' },
     { id: 'notificacoes', label: 'Notificações', icon: Bell, desc: 'Gerir alertas' },
+    { id: 'dados', label: 'Dados e Offline', icon: Wifi, desc: 'Poupança de dados, cache offline' },
     { id: 'aparicao', label: 'Aparência', icon: Palette, desc: 'Tema e visual' },
     { id: 'privacidade', label: 'Privacidade', icon: Shield, desc: 'Visibilidade e dados' },
   ];
@@ -105,6 +123,53 @@ export default function SettingsScreen() {
             </div>
           ))}
           <p className="text-neutral-600 text-xs text-center pt-4">As notificações serão ativadas em breve.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (section === 'dados') {
+    return (
+      <div className="min-h-screen bg-black pb-32">
+        <Header title="Dados e Offline" onBack={() => setSection(null)} />
+        <div className="px-6 space-y-4 max-w-sm mx-auto">
+          <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Wifi size={16} className="text-amber-500" />
+                <span className="text-white text-sm font-medium">Modo de poupança de dados</span>
+              </div>
+              <button
+                onClick={handleToggleDataSaver}
+                className={`w-12 h-7 rounded-full transition-colors relative shrink-0 ${dataSaver ? 'bg-amber-600' : 'bg-neutral-700'}`}
+              >
+                <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${dataSaver ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            <p className="text-neutral-500 text-xs">
+              Reduz o pré-carregamento de áudio para poupar dados móveis. Recomendado em conexões mais fracas.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800">
+            <div className="flex items-center gap-2 mb-2">
+              <Download size={16} className="text-amber-500" />
+              <span className="text-white text-sm font-medium">Cache offline temporário</span>
+            </div>
+            <p className="text-neutral-500 text-xs mb-3">
+              As faixas que ouves ficam guardadas temporariamente no teu dispositivo (até 3 dias), para tocarem mesmo com a internet instável. Isto não é o mesmo que download permanente.
+            </p>
+            <div className="flex items-center justify-between">
+              <span className="text-neutral-400 text-xs">{cacheInfo.count} {cacheInfo.count === 1 ? 'faixa guardada' : 'faixas guardadas'}</span>
+              <button
+                onClick={handleClearCache}
+                disabled={clearingCache || cacheInfo.count === 0}
+                className="text-red-400 text-xs font-medium disabled:opacity-40"
+              >
+                {clearingCache ? 'A limpar...' : 'Limpar cache'}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );

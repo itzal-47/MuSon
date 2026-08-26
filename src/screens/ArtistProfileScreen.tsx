@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { fetchTracksByArtist } from '@/lib/tracks';
+import { fetchSimilarArtists, type SimilarArtist } from '@/lib/similarArtists';
 import { useAuth } from '@/context/AuthContext';
 import { useLoginModal } from '@/context/LoginModalContext';
 import { useFollow } from '@/hooks/useFollow';
@@ -10,7 +11,7 @@ import TrackCard from '@/components/TrackCard';
 import ReportModal from '@/components/ReportModal';
 import {
   ArrowLeft, MapPin, Music, Share2, BadgeCheck,
-  Instagram, Youtube, Plus, Disc3, Flag, Check, Users,
+  Instagram, Youtube, Plus, Disc3, Flag, Check, Users, Sparkles,
 } from 'lucide-react';
 
 export default function ArtistProfileScreen() {
@@ -22,6 +23,7 @@ export default function ArtistProfileScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [artistData, setArtistData] = useState<ArtistProfile | null>(null);
   const [tracks, setTracks] = useState<TrackWithArtist[]>([]);
+  const [similarArtists, setSimilarArtists] = useState<SimilarArtist[]>([]);
   const [loading, setLoading] = useState(true);
   const [showReport, setShowReport] = useState(false);
 
@@ -36,6 +38,11 @@ export default function ArtistProfileScreen() {
       const t = await fetchTracksByArtist(id);
       setTracks(t);
       setLoading(false);
+
+      const generos = (ap as ArtistProfile | null)?.generos || [];
+      const provincia = (p as Profile | null)?.provincia || null;
+      const similar = await fetchSimilarArtists(id, generos, provincia);
+      setSimilarArtists(similar);
     })();
   }, [id]);
 
@@ -214,6 +221,36 @@ export default function ArtistProfileScreen() {
           </div>
         )}
       </div>
+
+      {similarArtists.length > 0 && (
+        <div className="px-6 mt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles size={18} className="text-amber-500" />
+            <h2 className="text-lg font-bold text-white">Artistas semelhantes</h2>
+          </div>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+            {similarArtists.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => navigate(`/artista/${a.id}`)}
+                className="w-24 shrink-0 text-center"
+              >
+                <div className="w-24 h-24 rounded-full bg-neutral-900 border border-neutral-800 overflow-hidden mb-2 flex items-center justify-center">
+                  {a.avatar_url ? (
+                    <img src={a.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <Music size={22} className="text-neutral-600" />
+                  )}
+                </div>
+                <div className="flex items-center justify-center gap-1">
+                  <p className="text-white text-xs font-medium truncate">{a.display_name || a.username}</p>
+                  {a.verificado && <BadgeCheck size={11} className="text-amber-500 shrink-0" />}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <ReportModal
         isOpen={showReport}
