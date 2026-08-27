@@ -19,8 +19,10 @@ interface AuthState {
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   verifySignupCode: (email: string, code: string) => Promise<void>;
+  resendSignupCode: (email: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   verifyRecoveryCode: (email: string, code: string) => Promise<void>;
+  resendRecoveryCode: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -52,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const fetchProfile = useCallback(async (uid: string): Promise<Profile | null> => {
     const { data, error } = await supabase
@@ -93,10 +96,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(newSession);
         setUser(newSession?.user ?? null);
         if (newSession?.user) {
+          // Marca o perfil como "a carregar" enquanto o pedido está em curso,
+          // para o OnboardingGate não decidir com base num perfil ainda desatualizado
+          // (evita mandar para o onboarding quem já tem conta, só porque o perfil
+          // ainda não chegou nesse instante).
+          setProfileLoading(true);
           const p = await fetchProfile(newSession.user.id);
           setProfile(p);
+          setProfileLoading(false);
         } else {
           setProfile(null);
+          setProfileLoading(false);
         }
       })();
     });
@@ -150,7 +160,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   }, []);
 
-  const needsOnboarding = !!user && !profile?.username;
+  const resendSignupCode = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    if (error) throw new Error(mapAuthError(error));
+  }, []);
+
+  const resendRecoveryCode = useCallback(async (email: string) => {
+    // O Supabase não tem um "resend" dedicado para recuperação — pedir de novo o
+    // envio do email de recuperação gera um código novo, o que tem o mesmo efeito.
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw new Error(mapAuthError(error));
+  }, []);
+
+  const needsOnboarding = !!user && !profileLoading && !profile?.username;
 
   return (
     <AuthContext.Provider
@@ -163,8 +185,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signIn,
         verifySignupCode,
+        resendSignupCode,
         resetPassword,
         verifyRecoveryCode,
+        resendRecoveryCode,
         updatePassword,
         signInWithGoogle,
         signOut,

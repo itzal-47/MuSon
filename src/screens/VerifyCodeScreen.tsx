@@ -1,17 +1,28 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Music, ArrowLeft, AlertCircle } from 'lucide-react';
+
+const RESEND_COOLDOWN = 30;
 
 export default function VerifyCodeScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const email = (location.state as { email?: string })?.email || '';
-  const { verifySignupCode } = useAuth();
+  const { verifySignupCode, resendSignupCode } = useAuth();
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   const handleChange = (idx: number, val: string) => {
     if (!/^\d?$/.test(val)) return;
@@ -53,6 +64,22 @@ export default function VerifyCodeScreen() {
       refs.current[0]?.focus();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (cooldown > 0 || resending || !email) return;
+    setResending(true);
+    setResendMessage(null);
+    setError(null);
+    try {
+      await resendSignupCode(email);
+      setResendMessage('Enviámos um novo código para o teu email.');
+      setCooldown(RESEND_COOLDOWN);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível reenviar o código.');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -105,6 +132,12 @@ export default function VerifyCodeScreen() {
             </div>
           )}
 
+          {resendMessage && (
+            <div className="flex items-center gap-2 text-emerald-400 text-sm bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+              <span>{resendMessage}</span>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading || digits.join('').length !== 6}
@@ -115,10 +148,15 @@ export default function VerifyCodeScreen() {
         </form>
 
         <button
-          onClick={() => navigate('/login')}
-          className="text-center text-amber-500 hover:text-amber-400 text-sm mt-6 transition-colors"
+          onClick={handleResend}
+          disabled={cooldown > 0 || resending}
+          className="text-center text-amber-500 hover:text-amber-400 disabled:text-neutral-600 text-sm mt-6 transition-colors"
         >
-          Não recebeste o código? Voltar
+          {resending
+            ? 'A reenviar...'
+            : cooldown > 0
+              ? `Reenviar código (${cooldown}s)`
+              : 'Não recebeste o código? Reenviar'}
         </button>
       </div>
     </div>

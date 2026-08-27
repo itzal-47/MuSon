@@ -55,8 +55,8 @@ export default function ReportModal({ isOpen, onClose, tipo, itemId }: Props) {
         setMotivo('');
         onClose();
       }, 1500);
-    } catch {
-      setError('Erro ao enviar a denúncia. Tenta novamente.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao enviar a denúncia. Tenta novamente.');
     } finally {
       setLoading(false);
     }

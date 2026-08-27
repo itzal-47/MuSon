@@ -28,6 +28,8 @@ import NotificationsScreen from '@/screens/NotificationsScreen';
 import PlaylistScreen from '@/screens/PlaylistScreen';
 import StatsScreen from '@/screens/StatsScreen';
 import ChartsScreen from '@/screens/ChartsScreen';
+import RequestVerificationScreen from '@/screens/RequestVerificationScreen';
+import AdminScreen from '@/screens/AdminScreen';
 import { useEffect, useState } from 'react';
 
 function SplashGate({ children }: { children: React.ReactNode }) {
@@ -80,6 +82,8 @@ function AppRoutes() {
         <Route path="/playlist/:id" element={<PlaylistScreen />} />
         <Route path="/estatisticas" element={<StatsScreen />} />
         <Route path="/charts" element={<ChartsScreen />} />
+        <Route path="/verificacao" element={<RequestVerificationScreen />} />
+        <Route path="/admin" element={<AdminScreen />} />
         <Route path="/definicoes" element={<SettingsScreen />} />
         <Route path="/sobre" element={<AboutScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />

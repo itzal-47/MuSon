@@ -1,13 +1,15 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Music, Lock, AlertCircle, ArrowLeft, Eye, EyeOff, Check } from 'lucide-react';
+
+const RESEND_COOLDOWN = 30;
 
 export default function ResetPasswordScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const email = (location.state as { email?: string })?.email || '';
-  const { verifyRecoveryCode, updatePassword } = useAuth();
+  const { verifyRecoveryCode, updatePassword, resendRecoveryCode } = useAuth();
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,7 +17,16 @@ export default function ResetPasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   const handleChange = (idx: number, val: string) => {
     if (!/^\d?$/.test(val)) return;
@@ -67,6 +78,22 @@ export default function ResetPasswordScreen() {
       refs.current[0]?.focus();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (cooldown > 0 || resending || !email) return;
+    setResending(true);
+    setResendMessage(null);
+    setError(null);
+    try {
+      await resendRecoveryCode(email);
+      setResendMessage('Enviámos um novo código para o teu email.');
+      setCooldown(RESEND_COOLDOWN);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível reenviar o código.');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -162,6 +189,12 @@ export default function ResetPasswordScreen() {
             </div>
           )}
 
+          {resendMessage && (
+            <div className="flex items-center gap-2 text-emerald-400 text-sm bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+              <span>{resendMessage}</span>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading || digits.join('').length !== 6 || !newPassword || !confirmPassword}
@@ -170,6 +203,18 @@ export default function ResetPasswordScreen() {
             {loading ? 'A redefinir...' : 'Redefinir senha'}
           </button>
         </form>
+
+        <button
+          onClick={handleResend}
+          disabled={cooldown > 0 || resending}
+          className="text-center text-amber-500 hover:text-amber-400 disabled:text-neutral-600 text-sm mt-6 transition-colors"
+        >
+          {resending
+            ? 'A reenviar...'
+            : cooldown > 0
+              ? `Reenviar código (${cooldown}s)`
+              : 'Não recebeste o código? Reenviar'}
+        </button>
       </div>
     </div>
   );

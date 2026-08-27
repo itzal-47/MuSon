@@ -2,16 +2,19 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { fetchStreak, type StreakInfo } from '@/lib/streaks';
-import { Music, Settings, LogOut, ChevronRight, BadgeCheck, MapPin, Disc3, Upload, BarChart3, Flame } from 'lucide-react';
+import { fetchIsAdmin } from '@/lib/admin';
+import { Music, Settings, LogOut, ChevronRight, BadgeCheck, MapPin, Disc3, Upload, BarChart3, Flame, Shield } from 'lucide-react';
 
 export default function ProfileScreen() {
   const navigate = useNavigate();
   const { profile, user, signOut } = useAuth();
   const [streak, setStreak] = useState<StreakInfo | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     fetchStreak(user.id).then(setStreak);
+    fetchIsAdmin(user.id).then(setIsAdmin);
   }, [user]);
 
   if (!user) {
@@ -151,6 +154,19 @@ export default function ProfileScreen() {
               <span className="flex-1 text-left text-white font-medium">Estatísticas</span>
               <ChevronRight size={18} className="text-neutral-600" />
             </button>
+
+            {!profile?.verificado && (
+              <button
+                onClick={() => navigate('/verificacao')}
+                className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-neutral-900 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center">
+                  <BadgeCheck size={18} className="text-amber-500" />
+                </div>
+                <span className="flex-1 text-left text-white font-medium">Pedir selo verificado</span>
+                <ChevronRight size={18} className="text-neutral-600" />
+              </button>
+            )}
           </>
         )}
 
@@ -175,6 +191,19 @@ export default function ProfileScreen() {
           <span className="flex-1 text-left text-white font-medium">Sobre e Ajuda</span>
           <ChevronRight size={18} className="text-neutral-600" />
         </button>
+
+        {isAdmin && (
+          <button
+            onClick={() => navigate('/admin')}
+            className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-neutral-900 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center">
+              <Shield size={18} className="text-amber-500" />
+            </div>
+            <span className="flex-1 text-left text-white font-medium">Administração</span>
+            <ChevronRight size={18} className="text-neutral-600" />
+          </button>
+        )}
 
         <button
           onClick={() => {
