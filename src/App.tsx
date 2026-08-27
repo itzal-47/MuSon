@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { PlayerProvider } from '@/context/PlayerContext';
 import { LoginModalProvider } from '@/context/LoginModalContext';
@@ -110,9 +110,9 @@ export default function App() {
     <AuthProvider>
       <LoginModalProvider>
         <PlayerProvider>
-          <HashRouter>
+          <BrowserRouter>
             <AppShell />
-          </HashRouter>
+          </BrowserRouter>
         </PlayerProvider>
       </LoginModalProvider>
     </AuthProvider>

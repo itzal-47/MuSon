@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ListMusic, ChevronLeft, Play, MoreVertical, Users, Lock, Globe,
-  Trash2, UserPlus, X, GripVertical, Pencil,
+  Trash2, UserPlus, X, GripVertical, Pencil, Share2, Link2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { usePlayer } from '@/context/PlayerContext';
@@ -12,6 +12,7 @@ import {
   fetchPlaylist, fetchPlaylistTracks, updatePlaylist, deletePlaylist,
   reorderPlaylistTracks, fetchCollaborators, addCollaboratorByUsername, removeCollaborator,
 } from '@/lib/playlists';
+import { shareOrCopyLink } from '@/lib/shareLink';
 
 export default function PlaylistScreen() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ export default function PlaylistScreen() {
   const [newCollabUsername, setNewCollabUsername] = useState('');
   const [collabError, setCollabError] = useState('');
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
 
@@ -81,6 +83,19 @@ export default function PlaylistScreen() {
     await updatePlaylist(playlist.id, { nome: nameDraft.trim() });
     setPlaylist({ ...playlist, nome: nameDraft.trim() });
     setEditingName(false);
+  };
+
+  const handleShare = async () => {
+    if (!playlist) return;
+    const result = await shareOrCopyLink({
+      title: playlist.nome,
+      text: `Ouve a playlist "${playlist.nome}" no MuSon`,
+      url: window.location.href,
+    });
+    if (result === 'copied') {
+      setShareStatus('copied');
+      setTimeout(() => setShareStatus('idle'), 2000);
+    }
   };
 
   const handleAddCollaborator = async () => {
@@ -139,7 +154,16 @@ export default function PlaylistScreen() {
           <button onClick={() => navigate(-1)} className="text-neutral-400 hover:text-white transition-colors">
             <ChevronLeft size={24} />
           </button>
-          {isOwner && (
+          <div className="flex items-center gap-2">
+            {playlist.publica && (
+              <button
+                onClick={handleShare}
+                className="w-10 h-10 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-300 hover:text-white transition-colors"
+              >
+                {shareStatus === 'copied' ? <Link2 size={16} className="text-amber-500" /> : <Share2 size={16} />}
+              </button>
+            )}
+            {isOwner && (
             <div className="relative">
               <button onClick={() => setShowMenu((s) => !s)} className="text-neutral-400 hover:text-white transition-colors">
                 <MoreVertical size={22} />
@@ -184,6 +208,7 @@ export default function PlaylistScreen() {
               )}
             </div>
           )}
+          </div>
         </div>
 
         <div className="w-32 h-32 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-4 overflow-hidden">

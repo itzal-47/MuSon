@@ -9,9 +9,10 @@ import { useFollow } from '@/hooks/useFollow';
 import type { Profile, ArtistProfile, TrackWithArtist } from '@/types/database';
 import TrackCard from '@/components/TrackCard';
 import ReportModal from '@/components/ReportModal';
+import { shareOrCopyLink } from '@/lib/shareLink';
 import {
   ArrowLeft, MapPin, Music, Share2, BadgeCheck,
-  Instagram, Youtube, Plus, Disc3, Flag, Check, Users, Sparkles,
+  Instagram, Youtube, Plus, Disc3, Flag, Check, Users, Sparkles, Link2,
 } from 'lucide-react';
 
 export default function ArtistProfileScreen() {
@@ -26,6 +27,20 @@ export default function ArtistProfileScreen() {
   const [similarArtists, setSimilarArtists] = useState<SimilarArtist[]>([]);
   const [loading, setLoading] = useState(true);
   const [showReport, setShowReport] = useState(false);
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
+
+  const handleShare = async () => {
+    if (!profile) return;
+    const result = await shareOrCopyLink({
+      title: profile.display_name || profile.username || 'Artista no MuSon',
+      text: `Ouve ${profile.display_name || profile.username} no MuSon`,
+      url: window.location.href,
+    });
+    if (result === 'copied') {
+      setShareStatus('copied');
+      setTimeout(() => setShareStatus('idle'), 2000);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -163,8 +178,11 @@ export default function ArtistProfileScreen() {
             >
               {isFollowing ? <><Check size={18} /> A seguir</> : <><Plus size={18} /> Seguir</>}
             </button>
-            <button className="w-12 h-12 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-300 hover:text-white transition-colors">
-              <Share2 size={18} />
+            <button
+              onClick={handleShare}
+              className="w-12 h-12 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-300 hover:text-white transition-colors"
+            >
+              {shareStatus === 'copied' ? <Link2 size={18} className="text-amber-500" /> : <Share2 size={18} />}
             </button>
             <button
               onClick={() => {
