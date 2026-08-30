@@ -114,3 +114,21 @@ export async function resolveReport(id: string): Promise<boolean> {
     .eq('id', id);
   return !error;
 }
+
+export async function adminDeleteTrack(id: string): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('admin_delete_track', { target_id: id });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function adminDeleteComment(id: string): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('admin_delete_comment', { target_id: id });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function adminDeletePlaylist(id: string): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('admin_delete_playlist', { target_id: id });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

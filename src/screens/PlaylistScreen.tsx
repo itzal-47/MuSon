@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { usePlayer } from '@/context/PlayerContext';
+import { usePlatformSettings } from '@/context/PlatformSettingsContext';
 import TrackCard from '@/components/TrackCard';
 import type { Playlist, PlaylistCollaborator, TrackWithArtist } from '@/types/database';
 import {
@@ -19,6 +20,7 @@ export default function PlaylistScreen() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { playTrack } = usePlayer();
+  const { settings } = usePlatformSettings();
 
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [tracks, setTracks] = useState<TrackWithArtist[]>([]);
@@ -66,6 +68,7 @@ export default function PlaylistScreen() {
 
   const handleToggleCollaborative = async () => {
     if (!playlist) return;
+    if (!playlist.colaborativa && settings && !settings.playlists_colaborativas_ativadas) return;
     const colaborativa = !playlist.colaborativa;
     await updatePlaylist(playlist.id, { colaborativa });
     setPlaylist({ ...playlist, colaborativa });
@@ -183,13 +186,15 @@ export default function PlaylistScreen() {
                     {playlist.publica ? <Lock size={15} /> : <Globe size={15} />}
                     {playlist.publica ? 'Tornar privada' : 'Tornar pública'}
                   </button>
-                  <button
-                    onClick={() => { handleToggleCollaborative(); setShowMenu(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white hover:bg-neutral-800 transition-colors"
-                  >
-                    <Users size={15} />
-                    {playlist.colaborativa ? 'Desativar colaboração' : 'Ativar colaboração'}
-                  </button>
+                  {!playlist.colaborativa && settings && !settings.playlists_colaborativas_ativadas ? null : (
+                    <button
+                      onClick={() => { handleToggleCollaborative(); setShowMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white hover:bg-neutral-800 transition-colors"
+                    >
+                      <Users size={15} />
+                      {playlist.colaborativa ? 'Desativar colaboração' : 'Ativar colaboração'}
+                    </button>
+                  )}
                   {playlist.colaborativa && (
                     <button
                       onClick={() => { setShowCollabModal(true); setShowMenu(false); }}

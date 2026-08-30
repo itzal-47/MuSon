@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, mapAuthError } from '@/context/AuthContext';
+import { usePlatformSettings } from '@/context/PlatformSettingsContext';
 import { Music, Mail, Lock, AlertCircle, ArrowRight, UserPlus, LogIn, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginScreen() {
   const navigate = useNavigate();
   const { signUp, signIn, signInWithGoogle } = useAuth();
+  const { settings } = usePlatformSettings();
   const [mode, setMode] = useState<'entrar' | 'registar'>('entrar');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,6 +16,8 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const registosDesativados = settings ? !settings.registos_ativados : false;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -21,6 +25,10 @@ export default function LoginScreen() {
     if (!email.trim() || !password) return;
 
     if (mode === 'registar') {
+      if (registosDesativados) {
+        setError('Os registos estão temporariamente desativados. Tenta novamente mais tarde.');
+        return;
+      }
       if (password.length < 8) {
         setError('A senha deve ter pelo menos 8 caracteres.');
         return;
@@ -99,6 +107,13 @@ export default function LoginScreen() {
             : 'Cria a tua conta com email e senha.'}
         </p>
 
+        {mode === 'registar' && registosDesativados && (
+          <div className="flex items-center gap-2 text-amber-400 text-sm bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 mb-4">
+            <AlertCircle size={16} className="shrink-0" />
+            <span>Os registos estão temporariamente desativados. Tenta novamente mais tarde.</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
             <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
@@ -167,7 +182,7 @@ export default function LoginScreen() {
 
           <button
             type="submit"
-            disabled={loading || !email.trim() || !password}
+            disabled={loading || !email.trim() || !password || (mode === 'registar' && registosDesativados)}
             className="w-full py-4 rounded-xl accent-gradient hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold flex items-center justify-center gap-2 transition-all glow-accent-sm"
           >
             {loading ? 'A processar...' : mode === 'entrar' ? 'Entrar' : 'Registar'}

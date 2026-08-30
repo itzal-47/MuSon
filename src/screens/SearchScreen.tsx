@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { searchTracks, searchProfiles } from '@/lib/tracks';
 import type { TrackWithArtist } from '@/types/database';
 import TrackCard from '@/components/TrackCard';
-import { GENEROS, PROVINCIAS } from '@/types/database';
+import { GENEROS as GENEROS_PADRAO, PROVINCIAS } from '@/types/database';
+import { usePlatformSettings } from '@/context/PlatformSettingsContext';
 import {
   Search as SearchIcon, SlidersHorizontal, X, Music, Users,
   MapPin, BadgeCheck, ChevronDown,
@@ -21,6 +22,8 @@ interface ProfileResult {
 
 export default function SearchScreen() {
   const navigate = useNavigate();
+  const { settings } = usePlatformSettings();
+  const GENEROS = settings?.generos && settings.generos.length > 0 ? settings.generos : GENEROS_PADRAO;
   const [query, setQuery] = useState('');
   const [tracks, setTracks] = useState<TrackWithArtist[]>([]);
   const [profiles, setProfiles] = useState<ProfileResult[]>([]);

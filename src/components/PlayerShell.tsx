@@ -1,6 +1,7 @@
 import { usePlayer } from '@/context/PlayerContext';
 import { useLoginModal } from '@/context/LoginModalContext';
 import { useAuth } from '@/context/AuthContext';
+import { usePlatformSettings } from '@/context/PlatformSettingsContext';
 import { useLike } from '@/hooks/useLike';
 import { useComments } from '@/hooks/useComments';
 import { useNavigate } from 'react-router-dom';
@@ -8,11 +9,13 @@ import {
   Play, Pause, SkipForward, SkipBack, ChevronDown,
   Music, Heart, Share2, Volume2, Shuffle,
   Repeat, Repeat1, ListMusic, GripVertical, X, BadgeCheck,
-  MessageCircle, Flag, Send, Trash2, Loader2,
+  MessageCircle, Flag, Send, Trash2, Loader2, Download, Crown,
 } from 'lucide-react';
 import { useState, useRef } from 'react';
 import ReportModal from '@/components/ReportModal';
 import { shareOrDownloadTrackCard } from '@/lib/shareCard';
+import { downloadTrackAudio } from '@/lib/downloads';
+import { isPremiumActive } from '@/lib/premium';
 
 export default function PlayerShell() {
   const {
@@ -38,16 +41,19 @@ export default function PlayerShell() {
     removeFromQueue,
   } = usePlayer();
   const { requireLogin } = useLoginModal();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [showQueue, setShowQueue] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadHint, setDownloadHint] = useState(false);
 
   const likeHook = useLike(currentTrack?.id);
   const commentHook = useComments(currentTrack?.id);
+  const userIsPremium = isPremiumActive(profile?.premium_until);
 
   const handleShare = async () => {
     if (!currentTrack || sharing) return;
@@ -58,6 +64,26 @@ export default function PlayerShell() {
       capa_url: currentTrack.capa_url,
     });
     setSharing(false);
+  };
+
+  const handleDownload = async () => {
+    if (!currentTrack || downloading) return;
+    if (!user) {
+      requireLogin('Inicia sessão para descarregar faixas.');
+      return;
+    }
+    if (!userIsPremium) {
+      setDownloadHint(true);
+      setTimeout(() => setDownloadHint(false), 2500);
+      return;
+    }
+    setDownloading(true);
+    await downloadTrackAudio({
+      titulo: currentTrack.titulo,
+      artist_name: currentTrack.artist_name,
+      audio_url: currentTrack.audio_url,
+    });
+    setDownloading(false);
   };
 
   if (!currentTrack) return null;
@@ -307,7 +333,29 @@ export default function PlayerShell() {
                   >
                     {sharing ? <Loader2 size={20} className="animate-spin" /> : <Share2 size={20} />}
                   </button>
+                  {currentTrack.permite_download && (
+                    <button
+                      onClick={handleDownload}
+                      disabled={downloading}
+                      className={`transition-colors disabled:opacity-50 ${userIsPremium ? 'text-white/60 hover:text-white' : 'text-white/30'}`}
+                      title={userIsPremium ? 'Descarregar faixa' : 'Disponível para utilizadores Premium'}
+                    >
+                      {downloading ? (
+                        <Loader2 size={20} className="animate-spin" />
+                      ) : userIsPremium ? (
+                        <Download size={20} />
+                      ) : (
+                        <div className="relative">
+                          <Download size={20} />
+                          <Crown size={10} className="absolute -top-1 -right-1 text-amber-400" />
+                        </div>
+                      )}
+                    </button>
+                  )}
                 </div>
+                {downloadHint && (
+                  <p className="text-center text-amber-300 text-xs -mt-2">Download disponível para utilizadores Premium.</p>
+                )}
               </>
             )}
           </div>
@@ -415,6 +463,8 @@ function CommentsView({
   const [text, setText] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { requireLogin } = useLoginModal();
+  const { settings } = usePlatformSettings();
+  const comentariosDesativados = settings ? !settings.comentarios_ativados : false;
 
   void trackId;
 
@@ -423,6 +473,7 @@ function CommentsView({
       requireLogin('Inicia sessão para comentar.');
       return;
     }
+    if (comentariosDesativados) return;
     if (!text.trim()) return;
     onAdd(text);
     setText('');
@@ -481,29 +532,33 @@ function CommentsView({
       </div>
 
       {/* Comment input */}
-      <div className="flex gap-2 pb-10 pt-2">
-        <textarea
-          ref={inputRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Escreve um comentário..."
-          rows={1}
-          className="flex-1 px-4 py-3 rounded-xl bg-white/10 backdrop-blur border border-white/10 text-white placeholder-white/40 focus:border-amber-500/50 focus:outline-none resize-none text-sm"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit();
-            }
-          }}
-        />
-        <button
-          onClick={handleSubmit}
-          disabled={submitting || !text.trim()}
-          className="w-12 h-12 rounded-xl accent-gradient hover:opacity-90 disabled:opacity-40 flex items-center justify-center text-black shrink-0 transition-all"
-        >
-          <Send size={18} />
-        </button>
-      </div>
+      {comentariosDesativados ? (
+        <p className="text-center text-white/40 text-xs pb-10 pt-2">Os comentários estão temporariamente desativados.</p>
+      ) : (
+        <div className="flex gap-2 pb-10 pt-2">
+          <textarea
+            ref={inputRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Escreve um comentário..."
+            rows={1}
+            className="flex-1 px-4 py-3 rounded-xl bg-white/10 backdrop-blur border border-white/10 text-white placeholder-white/40 focus:border-amber-500/50 focus:outline-none resize-none text-sm"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={submitting || !text.trim()}
+            className="w-12 h-12 rounded-xl accent-gradient hover:opacity-90 disabled:opacity-40 flex items-center justify-center text-black shrink-0 transition-all"
+          >
+            <Send size={18} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

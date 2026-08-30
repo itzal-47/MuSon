@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { uploadTrackAudio, uploadTrackCover } from '@/lib/storageService';
 import { getAudioDuration } from '@/lib/tracks';
-import { GENEROS } from '@/types/database';
+import { usePlatformSettings } from '@/context/PlatformSettingsContext';
 import {
   ArrowLeft, Music, Upload, Image as ImageIcon, AlertCircle,
   Check, Loader2, FileAudio,
@@ -13,9 +13,17 @@ import {
 const MAX_AUDIO_SIZE = 20 * 1024 * 1024; // 20MB
 const VALID_AUDIO_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/m4a', 'audio/x-m4a', 'audio/mp4'];
 
+function defaultScheduleValue(): string {
+  const d = new Date(Date.now() + 60 * 60 * 1000); // daqui a 1 hora, valor inicial sugerido
+  d.setSeconds(0, 0);
+  return d.toISOString().slice(0, 16);
+}
+
 export default function UploadScreen() {
   const navigate = useNavigate();
   const { user, profile, refreshProfile } = useAuth();
+  const { settings } = usePlatformSettings();
+  const GENEROS = settings?.generos && settings.generos.length > 0 ? settings.generos : ['Outro'];
   const [titulo, setTitulo] = useState('');
   const [genero, setGenero] = useState('');
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -23,6 +31,7 @@ export default function UploadScreen() {
   const [coverPreview, setCoverPreview] = useState('');
   const [explicita, setExplicita] = useState(false);
   const [permiteDownload, setPermiteDownload] = useState(false);
+  const [publicarEm, setPublicarEm] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +116,7 @@ export default function UploadScreen() {
         explicita: explicita,
         permite_download: permiteDownload,
         publicada: true,
+        publicar_em: publicarEm ? new Date(publicarEm).toISOString() : null,
       });
 
       if (insertError) throw insertError;
@@ -129,8 +139,22 @@ export default function UploadScreen() {
         <div className="w-20 h-20 rounded-full accent-gradient flex items-center justify-center mb-4 glow-accent">
           <Check size={40} className="text-black" />
         </div>
-        <h1 className="text-2xl font-bold text-white mb-2">Faixa publicada!</h1>
-        <p className="text-neutral-400 text-sm">A tua faixa está agora disponível para reprodução.</p>
+        <h1 className="text-2xl font-bold text-white mb-2">{publicarEm ? 'Faixa agendada!' : 'Faixa publicada!'}</h1>
+        <p className="text-neutral-400 text-sm">
+          {publicarEm
+            ? `Vai ficar visível ao público a partir de ${new Date(publicarEm).toLocaleString('pt-PT')}.`
+            : 'A tua faixa está agora disponível para reprodução.'}
+        </p>
+      </div>
+    );
+  }
+
+  if (settings && !settings.uploads_ativados) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6 text-center">
+        <AlertCircle size={32} className="text-neutral-600 mb-3" />
+        <p className="text-white font-medium mb-1">Publicações temporariamente desativadas</p>
+        <p className="text-neutral-500 text-sm">A equipa do MuSon desativou novas publicações por agora. Tenta novamente mais tarde.</p>
       </div>
     );
   }
@@ -253,6 +277,28 @@ export default function UploadScreen() {
             >
               <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${permiteDownload ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
+          </div>
+
+          <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-white text-sm font-medium">Agendar publicação</p>
+              <button
+                onClick={() => setPublicarEm(publicarEm ? '' : defaultScheduleValue())}
+                className={`w-12 h-7 rounded-full transition-colors relative shrink-0 ${publicarEm ? 'accent-gradient' : 'bg-neutral-700'}`}
+              >
+                <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${publicarEm ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            <p className="text-neutral-500 text-xs mb-3">A faixa só fica visível ao público na data escolhida</p>
+            {publicarEm && (
+              <input
+                type="datetime-local"
+                value={publicarEm}
+                min={defaultScheduleValue()}
+                onChange={(e) => setPublicarEm(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-black border border-neutral-800 text-white text-sm focus:border-amber-600 focus:outline-none"
+              />
+            )}
           </div>
         </div>
 

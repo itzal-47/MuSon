@@ -105,3 +105,53 @@ button, a {
 .animate-slide-up {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* ============================================================
+   Painel de Administração — identidade visual própria
+   (holográfico, multi-cor, "consola" — deliberadamente diferente
+   do resto da app, que usa o acento dourado)
+   ============================================================ */
+
+@keyframes adminDrift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, 40px) scale(1.1); }
+}
+@keyframes adminDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-40px, 20px) scale(1.05); }
+}
+@keyframes adminDrift3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(20px, -30px) scale(1.08); }
+}
+.animate-admin-drift-1 { animation: adminDrift1 18s ease-in-out infinite; }
+.animate-admin-drift-2 { animation: adminDrift2 22s ease-in-out infinite; }
+.animate-admin-drift-3 { animation: adminDrift3 20s ease-in-out infinite; }
+
+/* Cartão "vidro holográfico" — usar em todos os ecrãs do painel */
+.admin-glass {
+  background: rgba(23, 23, 23, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  position: relative;
+}
+.admin-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(34,211,238,0.35), rgba(217,70,239,0.2), rgba(139,92,246,0.35));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.admin-gradient-text {
+  background: linear-gradient(135deg, #22d3ee 0%, #d946ef 55%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

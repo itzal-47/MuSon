@@ -2,26 +2,35 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { usePlayer } from '@/context/PlayerContext';
+import { usePlatformSettings } from '@/context/PlatformSettingsContext';
 import { fetchRecentTracks, fetchTrendingTracks } from '@/lib/tracks';
 import { fetchContinueListening } from '@/lib/playback';
+import { fetchFeaturedResolved, type ResolvedFeaturedItem } from '@/lib/featuredContent';
 import type { TrackWithArtist } from '@/types/database';
 import TrackCard from '@/components/TrackCard';
-import { Music, TrendingUp, Sparkles, ChevronRight, Disc3, Play } from 'lucide-react';
+import { Music, TrendingUp, Sparkles, ChevronRight, Disc3, Play, Star } from 'lucide-react';
 
 export default function HomeScreen() {
   const { profile, user } = useAuth();
   const { playTrack, seek } = usePlayer();
+  const { settings } = usePlatformSettings();
   const navigate = useNavigate();
   const [recent, setRecent] = useState<TrackWithArtist[]>([]);
   const [trending, setTrending] = useState<TrackWithArtist[]>([]);
+  const [featured, setFeatured] = useState<ResolvedFeaturedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [continueItem, setContinueItem] = useState<{ track: TrackWithArtist; positionSeconds: number } | null>(null);
 
+  const generos = settings?.generos && settings.generos.length > 0
+    ? settings.generos.filter((g) => g !== 'Outro')
+    : ['Kuduro', 'Semba', 'Kizomba', 'Afro-house', 'Tarraxo', 'Afrobeats', 'Hip-hop', 'Gospel'];
+
   useEffect(() => {
     (async () => {
-      const [r, t] = await Promise.all([fetchRecentTracks(), fetchTrendingTracks()]);
+      const [r, t, f] = await Promise.all([fetchRecentTracks(), fetchTrendingTracks(), fetchFeaturedResolved()]);
       setRecent(r);
       setTrending(t);
+      setFeatured(f);
       setLoading(false);
     })();
   }, []);
@@ -89,6 +98,40 @@ export default function HomeScreen() {
             </section>
           )}
 
+          {/* Destaques curados pela equipa MuSon */}
+          {featured.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 px-6 mb-4">
+                <Star size={18} className="text-amber-500" />
+                <h2 className="text-lg font-bold text-white">Destaques</h2>
+              </div>
+              <div className="flex gap-3 overflow-x-auto no-scrollbar px-6 pb-2">
+                {featured.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => (f.tipo === 'faixa' && f.track ? playTrack(f.track, [f.track]) : navigate(`/artista/${f.itemId}`))}
+                    className="w-56 shrink-0 text-left rounded-2xl overflow-hidden relative card-elevate"
+                  >
+                    <div className="w-56 h-32 bg-neutral-900 border border-amber-600/20">
+                      {f.imagem ? (
+                        <img src={f.imagem} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Music size={28} className="text-neutral-700" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                    <div className="absolute bottom-2 left-3 right-3">
+                      <p className="text-white font-bold text-sm truncate">{f.titulo}</p>
+                      {f.subtitulo && <p className="text-neutral-300 text-xs truncate">{f.subtitulo}</p>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Novidades */}
           <section>
             <div className="flex items-center justify-between px-6 mb-4">
@@ -147,7 +190,7 @@ export default function HomeScreen() {
               <h2 className="text-lg font-bold text-white">Explora por género</h2>
             </div>
             <div className="flex gap-2 overflow-x-auto no-scrollbar px-6 pb-2">
-              {['Kuduro', 'Semba', 'Kizomba', 'Afro-house', 'Tarraxo', 'Afrobeats', 'Hip-hop', 'Gospel'].map((g) => (
+              {generos.map((g) => (
                 <button
                   key={g}
                   onClick={() => navigate(`/genero/${encodeURIComponent(g)}`)}

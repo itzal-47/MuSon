@@ -165,6 +165,11 @@ export default function MyTracksScreen() {
                     {!track.publicada && (
                       <span className="px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 text-xs">Não publicada</span>
                     )}
+                    {track.publicada && track.publicar_em && new Date(track.publicar_em).getTime() > Date.now() && (
+                      <span className="px-1.5 py-0.5 rounded bg-amber-600/15 text-amber-400 text-xs">
+                        Agendada: {new Date(track.publicar_em).toLocaleDateString('pt-PT')}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <button

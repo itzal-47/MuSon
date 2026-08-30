@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { fetchStreak, type StreakInfo } from '@/lib/streaks';
 import { fetchIsAdmin } from '@/lib/admin';
-import { Music, Settings, LogOut, ChevronRight, BadgeCheck, MapPin, Disc3, Upload, BarChart3, Flame, Shield } from 'lucide-react';
+import { Music, Settings, LogOut, ChevronRight, BadgeCheck, MapPin, Disc3, Upload, BarChart3, Flame, Shield, Crown } from 'lucide-react';
+import { isPremiumActive } from '@/lib/premium';
 
 export default function ProfileScreen() {
   const navigate = useNavigate();
@@ -70,6 +71,7 @@ export default function ProfileScreen() {
                 {profile?.display_name || profile?.username || 'Utilizador'}
               </h2>
               {profile?.verificado && <BadgeCheck size={18} className="text-amber-500 shrink-0" />}
+              {isPremiumActive(profile?.premium_until) && <Crown size={16} className="text-amber-400 shrink-0" />}
             </div>
             {profile?.username && (
               <p className="text-neutral-500 text-sm truncate">@{profile.username}</p>
@@ -169,6 +171,19 @@ export default function ProfileScreen() {
             )}
           </>
         )}
+
+        <button
+          onClick={() => navigate('/premium')}
+          className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-neutral-900 transition-colors"
+        >
+          <div className="w-10 h-10 rounded-xl bg-amber-600/10 flex items-center justify-center">
+            <Crown size={18} className="text-amber-500" />
+          </div>
+          <span className="flex-1 text-left text-white font-medium">
+            {isPremiumActive(profile?.premium_until) ? 'MuSon Premium' : 'Torna-te Premium'}
+          </span>
+          <ChevronRight size={18} className="text-neutral-600" />
+        </button>
 
         <button
           onClick={() => navigate('/definicoes')}

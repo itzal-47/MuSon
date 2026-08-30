@@ -85,13 +85,28 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const pendingRestoreTimeRef = useRef(0);
   const pendingSeekOnLoadRef = useRef(0);
   const cachedRef = useRef<string | null>(null);
+  const currentPlayIdRef = useRef<string | null>(null);
+
+  const finalizePlayDuration = useCallback((seconds: number) => {
+    const playId = currentPlayIdRef.current;
+    if (!playId || seconds <= 0) return;
+    Promise.resolve(
+      supabase.from('track_plays').update({ duracao_ouvida_segundos: Math.round(seconds) }).eq('id', playId)
+    ).then(() => undefined).catch(() => undefined);
+  }, []);
 
   const registerPlay = useCallback((track: PlayerTrack) => {
     if (playedRef.current === track.id) return;
     playedRef.current = track.id;
+    currentPlayIdRef.current = null;
     const uid = userRef.current?.id;
-    Promise.resolve(supabase.from('track_plays').insert({ track_id: track.id, user_id: uid || null }))
-      .then(() => undefined)
+    Promise.resolve(
+      supabase.from('track_plays').insert({ track_id: track.id, user_id: uid || null }).select('id').single()
+    )
+      .then((res) => {
+        const id = (res as { data?: { id: string } | null }).data?.id;
+        if (id) currentPlayIdRef.current = id;
+      })
       .catch(() => undefined);
     if (uid) {
       registerListenForStreak(uid).catch(() => undefined);
@@ -129,6 +144,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [registerPlay]);
 
   const playTrack = useCallback((track: PlayerTrack, newQueue?: PlayerTrack[]) => {
+    finalizePlayDuration(audioRef.current?.currentTime || 0);
     playedRef.current = null;
     pendingRestoreTimeRef.current = 0;
     if (newQueue && newQueue.length > 0) {
@@ -143,7 +159,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
     setCurrentTrack(track);
     loadAndPlay(track);
-  }, [shuffle, loadAndPlay]);
+  }, [shuffle, loadAndPlay, finalizePlayDuration]);
 
   const togglePlay = useCallback(() => {
     if (!currentTrack) return;
@@ -184,10 +200,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setQueueIndex(nextIdx);
     const track = queue[nextIdx];
     setCurrentTrack(track);
+    finalizePlayDuration(audioRef.current?.currentTime || 0);
     playedRef.current = null;
     pendingRestoreTimeRef.current = 0;
     loadAndPlay(track);
-  }, [queue, queueIndex, repeat, loadAndPlay, registerPlay]);
+  }, [queue, queueIndex, repeat, loadAndPlay, registerPlay, finalizePlayDuration]);
 
   const prev = useCallback(() => {
     if (queue.length === 0) return;
@@ -208,10 +225,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setQueueIndex(prevIdx);
     const track = queue[prevIdx];
     setCurrentTrack(track);
+    finalizePlayDuration(audioRef.current?.currentTime || 0);
     playedRef.current = null;
     pendingRestoreTimeRef.current = 0;
     loadAndPlay(track);
-  }, [queue, queueIndex, repeat, loadAndPlay]);
+  }, [queue, queueIndex, repeat, loadAndPlay, finalizePlayDuration]);
 
   const seek = useCallback((time: number) => {
     if (audioRef.current) {
@@ -357,9 +375,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (uid && currentTrack) {
         savePlaybackState(uid, currentTrack.id, audio.currentTime).catch(() => undefined);
       }
+      finalizePlayDuration(audio.currentTime);
     }, 5000);
     return () => clearInterval(interval);
-  }, [isPlaying, currentTrack, queue, queueIndex, shuffle, repeat]);
+  }, [isPlaying, currentTrack, queue, queueIndex, shuffle, repeat, finalizePlayDuration]);
 
   useEffect(() => {
     const audio = audioRef.current;

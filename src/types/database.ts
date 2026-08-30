@@ -18,6 +18,10 @@ export interface Profile {
   bio: string | null;
   verificado: boolean;
   criado_em: string;
+  premium_until?: string | null;
+  suspenso?: boolean;
+  suspenso_motivo?: string | null;
+  suspenso_em?: string | null;
 }
 
 export interface ArtistProfile {
@@ -57,6 +61,7 @@ export interface Track {
   album_id: string | null;
   numero_faixa: number | null;
   publicada: boolean;
+  publicar_em?: string | null;
   criado_em: string;
 }
 
