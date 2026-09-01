@@ -207,7 +207,7 @@ export default function LibraryScreen() {
                     <div className="flex-1 min-w-0 text-left">
                       <div className="flex items-center gap-1">
                         <p className="text-white font-medium text-sm truncate">{p.display_name || p.username}</p>
-                        {p.verificado && <BadgeCheck size={13} className="text-amber-500 shrink-0" />}
+                        {p.verificado && <BadgeCheck size={13} className="text-white fill-blue-500 shrink-0" />}
                       </div>
                       <p className="text-neutral-500 text-xs capitalize">{p.tipo_perfil}{p.provincia ? ` • ${p.provincia}` : ''}</p>
                     </div>

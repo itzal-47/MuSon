@@ -92,7 +92,7 @@ export default function ProducerProfileScreen() {
 
         <div className="flex items-center gap-2 mb-1">
           <h1 className="text-2xl font-bold text-white">{profile.display_name || profile.username}</h1>
-          {profile.verificado && <BadgeCheck size={20} className="text-amber-500" />}
+          {profile.verificado && <BadgeCheck size={20} className="text-white fill-blue-500" />}
         </div>
 
         <p className="text-neutral-500 text-sm mb-2">Produtor</p>

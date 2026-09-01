@@ -149,7 +149,7 @@ function ProfileRow({ profile, onClick }: { profile: ProfileResult; onClick: () 
       <div className="flex-1 min-w-0 text-left">
         <div className="flex items-center gap-1">
           <p className="text-white font-medium text-sm truncate">{profile.display_name || profile.username}</p>
-          {profile.verificado && <BadgeCheck size={14} className="text-amber-500 shrink-0" />}
+          {profile.verificado && <BadgeCheck size={14} className="text-white fill-blue-500 shrink-0" />}
         </div>
         <p className="text-neutral-500 text-xs">{profile.tipo_perfil === 'artista' ? 'Artista' : 'Produtor'}</p>
       </div>

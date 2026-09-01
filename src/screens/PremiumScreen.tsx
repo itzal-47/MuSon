@@ -4,14 +4,14 @@ import { ChevronLeft, Crown, Check, Clock, AlertCircle, Download, Zap, Sparkles 
 import { useAuth } from '@/context/AuthContext';
 import { usePlatformSettings } from '@/context/PlatformSettingsContext';
 import { isPremiumActive } from '@/lib/premium';
+import { formatKz } from '@/lib/format';
 import {
   fetchActivePlans, createPaymentOrder, fetchMyPendingOrder,
   type SubscriptionPlan, type PaymentOrder,
 } from '@/lib/subscriptions';
 
-function formatKz(value: number): string {
-  return new Intl.NumberFormat('pt-AO', { maximumFractionDigits: 0 }).format(value) + ' Kz';
-}
+
+
 
 export default function PremiumScreen() {
   const navigate = useNavigate();

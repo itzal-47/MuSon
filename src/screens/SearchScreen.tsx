@@ -235,7 +235,7 @@ export default function SearchScreen() {
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center gap-1">
                           <p className="text-white font-medium text-sm truncate">{p.display_name || p.username}</p>
-                          {p.verificado && <BadgeCheck size={14} className="text-amber-500 shrink-0" />}
+                          {p.verificado && <BadgeCheck size={14} className="text-white fill-blue-500 shrink-0" />}
                         </div>
                         <div className="flex items-center gap-2 text-neutral-500 text-xs">
                           <span>{p.tipo_perfil === 'artista' ? 'Artista' : p.tipo_perfil === 'produtor' ? 'Produtor' : 'Ouvinte'}</span>

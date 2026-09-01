@@ -1,18 +1,30 @@
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useAuth } from '@/context/AuthContext';
+import { fetchIsAdmin } from '@/lib/admin';
+import { timeAgo } from '@/lib/format';
 import {
   ArrowLeft, Bell, UserPlus, Music, Heart, MessageCircle, BadgeCheck, Check,
+  Flag, Wallet, LifeBuoy, Shield,
 } from 'lucide-react';
 import type { AppNotification, NotificationTipo } from '@/types/database';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+
+const ADMIN_TIPOS: NotificationTipo[] = ['admin_denuncia', 'admin_verificacao', 'admin_pagamento', 'admin_suporte'];
 
 export default function NotificationsScreen() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { notifications, loading, markAsRead, markAllAsRead, unreadCount } = useNotifications();
   const [senderProfiles, setSenderProfiles] = useState<Record<string, { display_name: string | null; username: string | null; avatar_url: string | null; verificado: boolean }>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [tab, setTab] = useState<'normais' | 'admin'>('normais');
+
+  useEffect(() => {
+    if (!user) return;
+    fetchIsAdmin(user.id).then(setIsAdmin);
+  }, [user]);
 
   useEffect(() => {
     if (notifications.length === 0) return;
@@ -56,6 +68,33 @@ export default function NotificationsScreen() {
     );
   }
 
+  const visibleNotifications = notifications.filter((n) =>
+    tab === 'admin' ? ADMIN_TIPOS.includes(n.tipo) : !ADMIN_TIPOS.includes(n.tipo)
+  );
+
+  const handleClick = (n: AppNotification) => {
+    if (!n.lida) markAsRead(n.id);
+    switch (n.tipo) {
+      case 'novo_seguidor':
+      case 'gosto':
+      case 'comentario':
+        if (n.referencia_id) navigate(`/artista/${n.referencia_id}`);
+        break;
+      case 'admin_denuncia':
+        navigate('/admin/moderacao', { state: { tab: 'denuncias' } });
+        break;
+      case 'admin_verificacao':
+        navigate('/admin/moderacao', { state: { tab: 'verificacao' } });
+        break;
+      case 'admin_pagamento':
+        navigate('/admin/pagamentos');
+        break;
+      case 'admin_suporte':
+        navigate('/admin/moderacao', { state: { tab: 'suporte' } });
+        break;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black pb-32">
       <header className="px-6 pt-14 pb-6">
@@ -75,10 +114,31 @@ export default function NotificationsScreen() {
               className="text-amber-500 hover:text-amber-400 text-sm font-medium transition-colors flex items-center gap-1"
             >
               <Check size={16} />
-              Marcar todas como lidas
+              Marcar todas
             </button>
           )}
         </div>
+
+        {isAdmin && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTab('normais')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                tab === 'normais' ? 'accent-gradient text-black' : 'bg-neutral-900 border border-neutral-800 text-neutral-400'
+              }`}
+            >
+              Normais
+            </button>
+            <button
+              onClick={() => setTab('admin')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                tab === 'admin' ? 'accent-gradient text-black' : 'bg-neutral-900 border border-neutral-800 text-neutral-400'
+              }`}
+            >
+              <Shield size={14} /> Painel ADM
+            </button>
+          </div>
+        )}
       </header>
 
       <div className="px-6">
@@ -86,29 +146,26 @@ export default function NotificationsScreen() {
           <div className="flex items-center justify-center py-12">
             <div className="w-8 h-8 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : notifications.length === 0 ? (
+        ) : visibleNotifications.length === 0 ? (
           <div className="rounded-2xl bg-neutral-900 border border-neutral-800 p-8 text-center">
             <div className="w-14 h-14 rounded-2xl bg-neutral-800 mx-auto mb-3 flex items-center justify-center">
               <Bell size={26} className="text-neutral-600" />
             </div>
             <p className="text-white font-medium mb-1">Sem notificações</p>
-            <p className="text-neutral-400 text-sm">Quando alguém te seguir, gostar das tuas faixas ou comentar, vais ver aqui.</p>
+            <p className="text-neutral-400 text-sm">
+              {tab === 'admin'
+                ? 'Denúncias, pedidos de verificação e de pagamento aparecem aqui.'
+                : 'Quando alguém te seguir, gostar das tuas faixas ou comentar, vais ver aqui.'}
+            </p>
           </div>
         ) : (
           <div className="space-y-2">
-            {notifications.map((n) => (
+            {visibleNotifications.map((n) => (
               <NotificationRow
                 key={n.id}
                 notification={n}
                 sender={n.referencia_id ? senderProfiles[n.referencia_id] : undefined}
-                onClick={() => {
-                  if (!n.lida) markAsRead(n.id);
-                  if (n.tipo === 'novo_seguidor' && n.referencia_id) {
-                    navigate(`/artista/${n.referencia_id}`);
-                  } else if ((n.tipo === 'gosto' || n.tipo === 'comentario') && n.referencia_id) {
-                    navigate(`/artista/${n.referencia_id}`);
-                  }
-                }}
+                onClick={() => handleClick(n)}
               />
             ))}
           </div>
@@ -129,6 +186,7 @@ function NotificationRow({
 }) {
   const icon = getIcon(notification.tipo);
   const label = getLabel(notification.tipo, sender);
+  const isAdminTipo = ADMIN_TIPOS.includes(notification.tipo);
 
   return (
     <button
@@ -136,20 +194,20 @@ function NotificationRow({
       className={`w-full flex items-start gap-3 p-4 rounded-xl border transition-all text-left ${
         notification.lida
           ? 'bg-neutral-900 border-neutral-800'
-          : 'bg-amber-600/5 border-amber-600/20'
+          : isAdminTipo ? 'bg-cyan-500/5 border-cyan-500/20' : 'bg-amber-600/5 border-amber-600/20'
       }`}
     >
       <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center shrink-0">
         {sender?.avatar_url ? (
           <img src={sender.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
         ) : (
-          <div className="text-amber-500">{icon}</div>
+          <div className={isAdminTipo ? 'text-cyan-400' : 'text-amber-500'}>{icon}</div>
         )}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-white text-sm">
           {label}
-          {sender?.verificado && <BadgeCheck size={13} className="inline text-amber-500 ml-1" />}
+          {sender?.verificado && <BadgeCheck size={13} className="inline text-white fill-blue-500 ml-1" />}
         </p>
         {notification.referencia_texto && (
           <p className="text-neutral-500 text-xs truncate mt-0.5">"{notification.referencia_texto}"</p>
@@ -157,7 +215,7 @@ function NotificationRow({
         <p className="text-neutral-600 text-xs mt-1">{timeAgo(notification.criado_em)}</p>
       </div>
       {!notification.lida && (
-        <div className="w-2 h-2 rounded-full bg-amber-500 shrink-0 mt-2" />
+        <div className={`w-2 h-2 rounded-full shrink-0 mt-2 ${isAdminTipo ? 'bg-cyan-400' : 'bg-amber-500'}`} />
       )}
     </button>
   );
@@ -169,6 +227,10 @@ function getIcon(tipo: NotificationTipo) {
     case 'nova_faixa': return <Music size={18} />;
     case 'gosto': return <Heart size={18} />;
     case 'comentario': return <MessageCircle size={18} />;
+    case 'admin_denuncia': return <Flag size={18} />;
+    case 'admin_verificacao': return <BadgeCheck size={18} />;
+    case 'admin_pagamento': return <Wallet size={18} />;
+    case 'admin_suporte': return <LifeBuoy size={18} />;
   }
 }
 
@@ -179,18 +241,12 @@ function getLabel(tipo: NotificationTipo, sender?: { display_name: string | null
     case 'nova_faixa': return `Nova faixa de um artista que segues.`;
     case 'gosto': return `${name} gostou da tua faixa.`;
     case 'comentario': return `${name} comentou na tua faixa.`;
+    case 'admin_denuncia': return 'Nova denúncia recebida.';
+    case 'admin_verificacao': return 'Novo pedido de selo verificado.';
+    case 'admin_pagamento': return 'Novo pedido de pagamento pendente.';
+    case 'admin_suporte': return 'Novo ticket de suporte.';
   }
 }
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'agora mesmo';
-  if (mins < 60) return `há ${mins} min`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `há ${hours}h`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `há ${days}d`;
-  const months = Math.floor(days / 30);
-  return `há ${months} meses`;
-}
+
+

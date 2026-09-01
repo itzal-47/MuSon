@@ -116,7 +116,7 @@ export default function ArtistProfileScreen() {
 
         <div className="flex items-center gap-2 mb-1">
           <h1 className="text-2xl font-bold text-white">{profile.display_name || profile.username}</h1>
-          {profile.verificado && <BadgeCheck size={20} className="text-amber-500" />}
+          {profile.verificado && <BadgeCheck size={20} className="text-white fill-blue-500" />}
         </div>
 
         <p className="text-neutral-500 text-sm mb-2">Artista</p>
@@ -262,7 +262,7 @@ export default function ArtistProfileScreen() {
                 </div>
                 <div className="flex items-center justify-center gap-1">
                   <p className="text-white text-xs font-medium truncate">{a.display_name || a.username}</p>
-                  {a.verificado && <BadgeCheck size={11} className="text-amber-500 shrink-0" />}
+                  {a.verificado && <BadgeCheck size={11} className="text-white fill-blue-500 shrink-0" />}
                 </div>
               </button>
             ))}

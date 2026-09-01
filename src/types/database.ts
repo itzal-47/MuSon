@@ -126,7 +126,9 @@ export interface Report {
   criado_em: string;
 }
 
-export type NotificationTipo = 'novo_seguidor' | 'nova_faixa' | 'gosto' | 'comentario';
+export type NotificationTipo =
+  | 'novo_seguidor' | 'nova_faixa' | 'gosto' | 'comentario'
+  | 'admin_denuncia' | 'admin_verificacao' | 'admin_pagamento' | 'admin_suporte';
 
 export interface AppNotification {
   id: string;

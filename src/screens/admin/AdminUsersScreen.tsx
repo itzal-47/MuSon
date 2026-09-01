@@ -129,7 +129,7 @@ export default function AdminUsersScreen() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="text-white font-medium text-sm truncate">{u.display_name || u.username}</p>
-                        {u.verificado && <BadgeCheck size={13} className="text-amber-500 shrink-0" />}
+                        {u.verificado && <BadgeCheck size={13} className="text-white fill-blue-500 shrink-0" />}
                         {premiumActive && <Crown size={13} className="text-cyan-300 shrink-0" />}
                       </div>
                       <p className="text-neutral-500 text-xs truncate">{u.email} · {u.tipo_perfil}</p>

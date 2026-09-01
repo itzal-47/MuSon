@@ -5,10 +5,7 @@ import {
   fetchPendingOrders, confirmPaymentOrder, cancelPaymentOrder,
   type PaymentOrder,
 } from '@/lib/subscriptions';
-
-function formatKz(value: number): string {
-  return new Intl.NumberFormat('pt-AO', { maximumFractionDigits: 0 }).format(value) + ' Kz';
-}
+import { formatKz } from '@/lib/format';
 
 export default function AdminPaymentsScreen() {
   const [orders, setOrders] = useState<PaymentOrder[]>([]);

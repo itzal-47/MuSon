@@ -5,14 +5,54 @@ export interface StreakInfo {
   melhor_streak: number;
 }
 
-function todayStr(): string {
+interface ExistingStreak {
+  dias_seguidos: number;
+  melhor_streak: number;
+  ultimo_dia: string | null;
+}
+
+export function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function yesterdayStr(): string {
+export function yesterdayStr(): string {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Lógica pura de cálculo do streak — sem I/O, fácil de testar com datas
+ * fixas em vez de depender do relógio do sistema.
+ *
+ * - Sem registo anterior: começa um streak novo de 1 dia.
+ * - Já contado hoje: devolve null (nada a atualizar).
+ * - Último dia foi ontem: o streak continua, soma 1.
+ * - Último dia foi antes de ontem: o streak quebrou, volta a 1.
+ */
+export function computeStreakUpdate(
+  existing: ExistingStreak | null,
+  today: string,
+  yesterday: string
+): { dias_seguidos: number; melhor_streak: number } | null {
+  if (!existing) {
+    return { dias_seguidos: 1, melhor_streak: 1 };
+  }
+  if (existing.ultimo_dia === today) {
+    return null; // já contado hoje
+  }
+  const novoStreak = existing.ultimo_dia === yesterday ? existing.dias_seguidos + 1 : 1;
+  const melhor = Math.max(existing.melhor_streak, novoStreak);
+  return { dias_seguidos: novoStreak, melhor_streak: melhor };
+}
+
+/**
+ * Um streak só continua "visível" como ativo se o último dia registado
+ * foi hoje ou ontem — caso contrário, mesmo sem termos atualizado a base
+ * de dados ainda, já quebrou.
+ */
+export function isStreakStillValid(ultimoDia: string | null, today: string, yesterday: string): boolean {
+  return ultimoDia === today || ultimoDia === yesterday;
 }
 
 /**
@@ -21,6 +61,7 @@ function yesterdayStr(): string {
  */
 export async function registerListenForStreak(userId: string): Promise<void> {
   const today = todayStr();
+  const yesterday = yesterdayStr();
 
   const { data: existing } = await supabase
     .from('listening_streaks')
@@ -28,24 +69,22 @@ export async function registerListenForStreak(userId: string): Promise<void> {
     .eq('user_id', userId)
     .maybeSingle();
 
+  const update = computeStreakUpdate(existing, today, yesterday);
+  if (!update) return; // já contado hoje
+
   if (!existing) {
     await supabase.from('listening_streaks').insert({
       user_id: userId,
-      dias_seguidos: 1,
-      melhor_streak: 1,
+      dias_seguidos: update.dias_seguidos,
+      melhor_streak: update.melhor_streak,
       ultimo_dia: today,
     });
     return;
   }
 
-  if (existing.ultimo_dia === today) return; // já contado hoje
-
-  const novoStreak = existing.ultimo_dia === yesterdayStr() ? existing.dias_seguidos + 1 : 1;
-  const melhor = Math.max(existing.melhor_streak, novoStreak);
-
   await supabase
     .from('listening_streaks')
-    .update({ dias_seguidos: novoStreak, melhor_streak: melhor, ultimo_dia: today, atualizado_em: new Date().toISOString() })
+    .update({ dias_seguidos: update.dias_seguidos, melhor_streak: update.melhor_streak, ultimo_dia: today, atualizado_em: new Date().toISOString() })
     .eq('user_id', userId);
 }
 
@@ -57,9 +96,7 @@ export async function fetchStreak(userId: string): Promise<StreakInfo | null> {
     .maybeSingle();
   if (!data) return null;
 
-  // Se o último dia não foi hoje nem ontem, o streak já quebrou visualmente
-  // (mesmo que ainda não tenha sido escrito na base de dados)
-  const stillValid = data.ultimo_dia === todayStr() || data.ultimo_dia === yesterdayStr();
+  const stillValid = isStreakStillValid(data.ultimo_dia, todayStr(), yesterdayStr());
   return {
     dias_seguidos: stillValid ? data.dias_seguidos : 0,
     melhor_streak: data.melhor_streak,

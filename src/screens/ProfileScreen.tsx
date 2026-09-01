@@ -70,7 +70,7 @@ export default function ProfileScreen() {
               <h2 className="text-xl font-bold text-white truncate">
                 {profile?.display_name || profile?.username || 'Utilizador'}
               </h2>
-              {profile?.verificado && <BadgeCheck size={18} className="text-amber-500 shrink-0" />}
+              {profile?.verificado && <BadgeCheck size={18} className="text-white fill-blue-500 shrink-0" />}
               {isPremiumActive(profile?.premium_until) && <Crown size={16} className="text-amber-400 shrink-0" />}
             </div>
             {profile?.username && (

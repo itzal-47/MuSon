@@ -1,3 +1,5 @@
+import { slugify } from './format';
+
 interface ShareTrackInput {
   titulo: string;
   artist_name?: string;
@@ -119,15 +121,8 @@ export async function generateTrackShareCard(track: ShareTrackInput): Promise<Bl
   return new Promise((resolve) => canvas.toBlob((b) => resolve(b), 'image/png', 0.95));
 }
 
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-    .slice(0, 40) || 'faixa';
-}
+
+
 
 export type ShareResult = 'shared' | 'downloaded' | 'failed';
 

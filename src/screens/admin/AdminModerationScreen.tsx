@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   BadgeCheck, Flag, Check, X, ExternalLink, Music, Clock, AlertCircle, Trash2,
   Sparkles, LifeBuoy, ScrollText, Plus, Power, GripVertical,
@@ -38,7 +39,9 @@ const TABS: { id: Tab; label: string; icon: typeof BadgeCheck }[] = [
 
 export default function AdminModerationScreen() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<Tab>('verificacao');
+  const location = useLocation();
+  const initialTab = (location.state as { tab?: Tab } | null)?.tab;
+  const [tab, setTab] = useState<Tab>(initialTab || 'verificacao');
 
   const [requests, setRequests] = useState<VerificationRequest[]>([]);
   const [reports, setReports] = useState<ReportItem[]>([]);

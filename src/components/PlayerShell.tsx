@@ -39,6 +39,7 @@ export default function PlayerShell() {
     queueIndex,
     reorderQueue,
     removeFromQueue,
+    stop,
   } = usePlayer();
   const { requireLogin } = useLoginModal();
   const { user, profile } = useAuth();
@@ -139,6 +140,13 @@ export default function PlayerShell() {
                 >
                   {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
                 </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); stop(); }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-neutral-500 hover:text-white transition-colors"
+                  aria-label="Fechar leitor"
+                >
+                  <X size={16} />
+                </button>
               </div>
             </div>
           </div>
@@ -186,6 +194,13 @@ export default function PlayerShell() {
                   className={`w-10 h-10 rounded-full backdrop-blur flex items-center justify-center transition-colors ${showQueue ? 'accent-gradient text-black' : 'bg-white/10 text-white'}`}
                 >
                   <ListMusic size={20} />
+                </button>
+                <button
+                  onClick={stop}
+                  className="w-10 h-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center text-white"
+                  aria-label="Fechar leitor"
+                >
+                  <X size={20} />
                 </button>
               </div>
             </div>
@@ -239,7 +254,7 @@ export default function PlayerShell() {
                         className="flex items-center gap-1 text-white/70 text-lg hover:text-amber-400 transition-colors mt-1"
                       >
                         <span className="truncate">{currentTrack.artist_name || 'Artista'}</span>
-                        {(currentTrack as { artist_verificado?: boolean }).artist_verificado && <BadgeCheck size={16} className="text-amber-400 shrink-0" />}
+                        {(currentTrack as { artist_verificado?: boolean }).artist_verificado && <BadgeCheck size={16} className="text-white fill-blue-500 shrink-0" />}
                       </button>
                     </div>
                     <div className="flex flex-col items-center gap-1 shrink-0">
@@ -513,7 +528,7 @@ function CommentsView({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1">
                   <p className="text-white text-sm font-medium">{c.author_name}</p>
-                  {c.author_verificado && <BadgeCheck size={12} className="text-amber-500" />}
+                  {c.author_verificado && <BadgeCheck size={12} className="text-white fill-blue-500" />}
                   <span className="text-neutral-600 text-xs ml-1">{timeAgo(c.criado_em)}</span>
                 </div>
                 <p className="text-white/70 text-sm mt-0.5 break-words">{c.texto}</p>

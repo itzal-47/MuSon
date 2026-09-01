@@ -25,7 +25,7 @@ function mapTrack(t: Record<string, unknown>): TrackWithArtist {
  * aparecer cedo na fila, mas todas as faixas (incluindo as novas, com 0
  * plays) têm sempre hipótese — usa peso mínimo de 1.
  */
-function weightedShuffle(tracks: TrackWithArtist[], weights: Map<string, number>): TrackWithArtist[] {
+export function weightedShuffle(tracks: TrackWithArtist[], weights: Map<string, number>): TrackWithArtist[] {
   const scored = tracks.map((t) => {
     const weight = (weights.get(t.id) || 0) + 1;
     // Efraimidis-Spirakis weighted random sampling key

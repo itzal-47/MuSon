@@ -151,14 +151,17 @@ function AppRoutes() {
 }
 
 function AppShell() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
   return (
     <SplashGate>
       <MaintenanceGate>
         <SuspendedGate>
           <OnboardingGate>
             <AppRoutes />
-            <BottomNav />
-            <PlayerShell />
+            {!isAdminRoute && <BottomNav />}
+            {!isAdminRoute && <PlayerShell />}
             <LoginModal />
           </OnboardingGate>
         </SuspendedGate>

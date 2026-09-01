@@ -125,7 +125,7 @@ export default function TrackCard({ track, queue, variant = 'list' }: Props) {
             className="flex items-center gap-1 text-neutral-500 text-xs hover:text-amber-500 transition-colors"
           >
             <span className="truncate">{track.artist_name}</span>
-            {track.artist_verificado && <BadgeCheck size={11} className="text-amber-500 shrink-0" />}
+            {track.artist_verificado && <BadgeCheck size={11} className="text-white fill-blue-500 shrink-0" />}
           </button>
         </div>
 
