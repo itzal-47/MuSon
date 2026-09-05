@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Crown, Check, Clock, AlertCircle, Download, Zap, Sparkles } from 'lucide-react';
+import { ChevronLeft, Crown, Check, Clock, AlertCircle, Download, LifeBuoy, Sparkles } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { usePlatformSettings } from '@/context/PlatformSettingsContext';
 import { isPremiumActive } from '@/lib/premium';
@@ -128,7 +128,7 @@ export default function PremiumScreen() {
               <p className="text-white font-semibold text-sm mb-3">O que ganhas</p>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-neutral-300 text-sm"><Download size={14} className="text-amber-500 shrink-0" /> Download offline das faixas que o artista permitir</div>
-                <div className="flex items-center gap-2 text-neutral-300 text-sm"><Zap size={14} className="text-amber-500 shrink-0" /> Sem limites de utilização</div>
+                <div className="flex items-center gap-2 text-neutral-300 text-sm"><LifeBuoy size={14} className="text-amber-500 shrink-0" /> Suporte prioritário — as tuas mensagens são respondidas primeiro</div>
                 <div className="flex items-center gap-2 text-neutral-300 text-sm"><Sparkles size={14} className="text-amber-500 shrink-0" /> Selo de apoiante no perfil</div>
               </div>
             </div>

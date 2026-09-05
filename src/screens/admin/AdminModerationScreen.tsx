@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   BadgeCheck, Flag, Check, X, ExternalLink, Music, Clock, AlertCircle, Trash2,
-  Sparkles, LifeBuoy, ScrollText, Plus, Power, GripVertical,
+  Sparkles, LifeBuoy, ScrollText, Plus, Power, GripVertical, Crown,
 } from 'lucide-react';
 import AdminShell from '@/components/AdminShell';
 import { useAuth } from '@/context/AuthContext';
@@ -351,9 +351,16 @@ export default function AdminModerationScreen() {
           tickets.length === 0 ? <EmptyState text="Sem tickets de suporte em aberto." /> : (
             <div className="space-y-3">
               {tickets.map((t) => (
-                <div key={t.id} className="admin-glass p-4">
+                <div key={t.id} className={`admin-glass p-4 ${t.prioritario ? 'ring-1 ring-amber-500/40' : ''}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-white font-medium text-sm">{t.assunto}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-white font-medium text-sm">{t.assunto}</p>
+                      {t.prioritario && (
+                        <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">
+                          <Crown size={10} /> Premium
+                        </span>
+                      )}
+                    </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full ${t.status === 'aberto' ? 'bg-amber-500/15 text-amber-400' : 'bg-cyan-500/15 text-cyan-300'}`}>{t.status}</span>
                   </div>
                   <p className="text-neutral-500 text-xs mb-2">De @{t.user_username || t.user_display_name || 'utilizador'} • {new Date(t.criado_em).toLocaleDateString('pt-PT')}</p>

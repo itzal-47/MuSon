@@ -9,6 +9,7 @@ export interface SupportTicket {
   resposta_admin: string | null;
   criado_em: string;
   respondido_em: string | null;
+  prioritario: boolean;
   user_username?: string | null;
   user_display_name?: string | null;
 }
@@ -34,7 +35,8 @@ export async function fetchOpenTickets(): Promise<SupportTicket[]> {
     .from('support_tickets')
     .select('*, profile:profiles!support_tickets_user_id_fkey(username, display_name)')
     .neq('status', 'fechado')
-    .order('criado_em', { ascending: false });
+    .order('prioritario', { ascending: false })
+    .order('criado_em', { ascending: true });
   if (error || !data) return [];
   return data.map((row) => {
     const rawProfile = row.profile as unknown;
