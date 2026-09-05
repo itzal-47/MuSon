@@ -73,7 +73,7 @@ CREATE TRIGGER trg_notify_new_comment
   AFTER INSERT ON track_comments
   FOR EACH ROW EXECUTE FUNCTION notify_new_comment();
 
--- Publicação de faixa nova (só quando não é agendada — ver nota na migration anterior)
+-- Publicação de faixa nova (só quando não é agendada)
 CREATE OR REPLACE FUNCTION notify_new_track()
 RETURNS TRIGGER AS $$
 BEGIN

@@ -17,5 +17,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    env: {
+      // Valores falsos, só para o cliente Supabase conseguir ser
+      // instanciado durante os testes (nenhum teste chega a fazer pedidos
+      // de rede reais) — evita depender do .env real, que nunca é
+      // versionado no repositório.
+      VITE_SUPABASE_URL: 'https://teste-local.supabase.co',
+      VITE_SUPABASE_ANON_KEY: 'chave-de-teste-nao-e-real',
+    },
   },
 });

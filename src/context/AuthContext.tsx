@@ -16,7 +16,7 @@ interface AuthState {
   profile: Profile | null;
   loading: boolean;
   needsOnboarding: boolean;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<void>;
   verifySignupCode: (email: string, code: string) => Promise<void>;
   resendSignupCode: (email: string) => Promise<void>;
@@ -117,9 +117,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [fetchProfile]);
 
-  const signUp = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+  /**
+   * Devolve true se a conta já ficou ativa de imediato (sem precisar de
+   * confirmar o email — acontece quando "Confirm email" está desligado no
+   * Supabase), ou false se ainda falta confirmar por código.
+   */
+  const signUp = useCallback(async (email: string, password: string): Promise<boolean> => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw new Error(mapAuthError(error));
+    return !!data.session;
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {

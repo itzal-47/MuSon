@@ -76,6 +76,7 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 function MaintenanceGate({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { settings, loading } = usePlatformSettings();
+  const location = useLocation();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -86,7 +87,13 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
     fetchIsAdmin(user.id).then(setIsAdmin);
   }, [user]);
 
-  if (loading || (user && isAdmin === null)) return <>{children}</>;
+  // O ecrã de login (e recuperação de senha) nunca pode ficar bloqueado
+  // pela manutenção — senão ninguém, nem um administrador, consegue voltar
+  // a entrar depois de sair da sessão.
+  const authRoutes = ['/login', '/verificar', '/recuperar-senha', '/redefinir-senha'];
+  const onAuthRoute = authRoutes.some((r) => location.pathname.startsWith(r));
+
+  if (loading || onAuthRoute || (user && isAdmin === null)) return <>{children}</>;
   if (settings?.manutencao_ativa && !isAdmin) return <MaintenanceScreen />;
   return <>{children}</>;
 }

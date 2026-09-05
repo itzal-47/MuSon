@@ -42,8 +42,14 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       if (mode === 'registar') {
-        await signUp(email.trim(), password);
-        navigate('/verificar', { state: { email: email.trim(), mode: 'registar' } });
+        const contaJaAtiva = await signUp(email.trim(), password);
+        if (contaJaAtiva) {
+          // "Confirm email" está desligado no Supabase — a conta já está
+          // pronta a usar, sem precisar de código nenhum.
+          navigate('/');
+        } else {
+          navigate('/verificar', { state: { email: email.trim(), mode: 'registar' } });
+        }
       } else {
         await signIn(email.trim(), password);
         navigate('/');

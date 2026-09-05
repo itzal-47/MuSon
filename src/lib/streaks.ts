@@ -24,11 +24,6 @@ export function yesterdayStr(): string {
 /**
  * Lógica pura de cálculo do streak — sem I/O, fácil de testar com datas
  * fixas em vez de depender do relógio do sistema.
- *
- * - Sem registo anterior: começa um streak novo de 1 dia.
- * - Já contado hoje: devolve null (nada a atualizar).
- * - Último dia foi ontem: o streak continua, soma 1.
- * - Último dia foi antes de ontem: o streak quebrou, volta a 1.
  */
 export function computeStreakUpdate(
   existing: ExistingStreak | null,
@@ -48,8 +43,7 @@ export function computeStreakUpdate(
 
 /**
  * Um streak só continua "visível" como ativo se o último dia registado
- * foi hoje ou ontem — caso contrário, mesmo sem termos atualizado a base
- * de dados ainda, já quebrou.
+ * foi hoje ou ontem.
  */
 export function isStreakStillValid(ultimoDia: string | null, today: string, yesterday: string): boolean {
   return ultimoDia === today || ultimoDia === yesterday;
@@ -70,7 +64,7 @@ export async function registerListenForStreak(userId: string): Promise<void> {
     .maybeSingle();
 
   const update = computeStreakUpdate(existing, today, yesterday);
-  if (!update) return; // já contado hoje
+  if (!update) return;
 
   if (!existing) {
     await supabase.from('listening_streaks').insert({

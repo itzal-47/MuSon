@@ -247,6 +247,3 @@ function getLabel(tipo: NotificationTipo, sender?: { display_name: string | null
     case 'admin_suporte': return 'Novo ticket de suporte.';
   }
 }
-
-
-

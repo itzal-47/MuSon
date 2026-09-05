@@ -39,10 +39,6 @@ describe('mapAuthError', () => {
   });
 
   it('usa mensagem genérica para erros desconhecidos (nunca mostra o texto em inglês cru)', () => {
-    // Isto é importante: já apanhámos um bug real em que uma mensagem de
-    // erro do Supabase não reconhecida acabava por aparecer em inglês, sem
-    // tradução, diretamente ao utilizador. Este teste garante que há sempre
-    // uma mensagem em português, mesmo para erros que a função não conhece.
     const resultado = mapAuthError({ message: 'Something completely unexpected happened' });
     expect(resultado).toBe('Ocorreu um erro. Tenta novamente.');
   });
