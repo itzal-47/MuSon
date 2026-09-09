@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, mapAuthError } from '@/context/AuthContext';
 import { usePlatformSettings } from '@/context/PlatformSettingsContext';
+import { validateSignupPassword } from '@/lib/validation';
 import { Music, Mail, Lock, AlertCircle, ArrowRight, UserPlus, LogIn, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginScreen() {
@@ -29,15 +30,11 @@ export default function LoginScreen() {
         setError('Os registos estão temporariamente desativados. Tenta novamente mais tarde.');
         return;
       }
-      if (password.length < 8) {
-        setError('A senha deve ter pelo menos 8 caracteres.');
+      const validacao = validateSignupPassword(password, confirmPassword);
+      if (!validacao.valid) {
+        setError(validacao.error);
         return;
-      }
-      if (password !== confirmPassword) {
-        setError('As senhas não coincidem.');
-        return;
-      }
-    }
+      }    }
 
     setLoading(true);
     try {

@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { PlayerProvider } from '@/context/PlayerContext';
 import { LoginModalProvider } from '@/context/LoginModalContext';
 import { PlatformSettingsProvider, usePlatformSettings } from '@/context/PlatformSettingsContext';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import PlayerShell from '@/components/PlayerShell';
 import BottomNav from '@/components/BottomNav';
 import LoginModal from '@/components/LoginModal';
@@ -179,16 +180,18 @@ function AppShell() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <PlatformSettingsProvider>
-        <LoginModalProvider>
-          <PlayerProvider>
-            <BrowserRouter>
-              <AppShell />
-            </BrowserRouter>
-          </PlayerProvider>
-        </LoginModalProvider>
-      </PlatformSettingsProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <PlatformSettingsProvider>
+          <LoginModalProvider>
+            <PlayerProvider>
+              <BrowserRouter>
+                <AppShell />
+              </BrowserRouter>
+            </PlayerProvider>
+          </LoginModalProvider>
+        </PlatformSettingsProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

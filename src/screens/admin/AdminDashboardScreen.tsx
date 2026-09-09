@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Users, Music, Play, TrendingUp, UserPlus, BadgeCheck, Flag, Mic2, Disc3, MapPin, Tags,
+  Users, Music, Play, TrendingUp, UserPlus, BadgeCheck, Flag, Mic2, Disc3, MapPin, Tags, Bug, Check,
 } from 'lucide-react';
 import AdminShell from '@/components/AdminShell';
 import {
   fetchDashboardStats, fetchTopProvinces, fetchTopGenres, fetchSignupTrend,
   type DashboardStats, type ProvinceBreakdownItem, type GenreBreakdownItem, type SignupTrendPoint,
 } from '@/lib/adminDashboard';
+import { fetchRecentErrors, markErrorResolved, type ErrorLogEntry } from '@/lib/errorLogsAdmin';
 
 export default function AdminDashboardScreen() {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ export default function AdminDashboardScreen() {
   const [provinces, setProvinces] = useState<ProvinceBreakdownItem[]>([]);
   const [genres, setGenres] = useState<GenreBreakdownItem[]>([]);
   const [trend, setTrend] = useState<SignupTrendPoint[]>([]);
+  const [errors, setErrors] = useState<ErrorLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,14 +25,21 @@ export default function AdminDashboardScreen() {
       fetchTopProvinces(),
       fetchTopGenres(),
       fetchSignupTrend(14),
-    ]).then(([s, p, g, t]) => {
+      fetchRecentErrors(),
+    ]).then(([s, p, g, t, e]) => {
       setStats(s);
       setProvinces(p);
       setGenres(g);
       setTrend(t);
+      setErrors(e);
       setLoading(false);
     });
   }, []);
+
+  const handleResolveError = async (id: string) => {
+    const ok = await markErrorResolved(id);
+    if (ok) setErrors((prev) => prev.filter((e) => e.id !== id));
+  };
 
   return (
     <AdminShell active="dashboard">
@@ -43,6 +52,32 @@ export default function AdminDashboardScreen() {
           </div>
         ) : stats ? (
           <div className="space-y-6">
+            {/* Erros recentes por resolver */}
+            {errors.length > 0 && (
+              <div className="admin-glass p-4">
+                <p className="text-xs text-neutral-500 mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                  <Bug size={12} /> Erros por resolver ({errors.length})
+                </p>
+                <div className="space-y-2">
+                  {errors.slice(0, 5).map((err) => (
+                    <div key={err.id} className="flex items-start gap-2 p-2.5 rounded-lg bg-red-500/5 border border-red-500/15">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-red-300 text-xs font-medium truncate">{err.mensagem}</p>
+                        <p className="text-neutral-600 text-[10px] truncate">{err.url}</p>
+                      </div>
+                      <button
+                        onClick={() => handleResolveError(err.id)}
+                        className="shrink-0 p-1.5 rounded-lg bg-neutral-800 text-neutral-400 hover:text-emerald-400"
+                        aria-label="Marcar como resolvido"
+                      >
+                        <Check size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Ações pendentes — destaque se houver algo por fazer */}
             {(stats.pendingVerifications > 0 || stats.unresolvedReports > 0) && (
               <div className="admin-glass p-4">

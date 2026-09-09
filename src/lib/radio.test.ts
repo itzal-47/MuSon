@@ -51,4 +51,24 @@ describe('weightedShuffle', () => {
     weightedShuffle(tracks, new Map());
     expect(tracks).toEqual(copiaOriginal);
   });
+
+  it('funciona com uma única faixa', () => {
+    const tracks = [fakeTrack('solo')];
+    expect(weightedShuffle(tracks, new Map())).toHaveLength(1);
+  });
+
+  it('não rebenta com pesos de valor 0 (faixa nunca ouvida ainda conta)', () => {
+    const tracks = [fakeTrack('a'), fakeTrack('b')];
+    const pesos = new Map([['a', 0], ['b', 0]]);
+    const resultado = weightedShuffle(tracks, pesos);
+    expect(resultado).toHaveLength(2);
+  });
+
+  it('inclui faixas mesmo quando só algumas têm peso definido', () => {
+    const tracks = [fakeTrack('popular'), fakeTrack('nova')];
+    const pesos = new Map([['popular', 500]]); // 'nova' fica sem entrada no mapa
+    const resultado = weightedShuffle(tracks, pesos);
+    const ids = resultado.map((t) => t.id).sort();
+    expect(ids).toEqual(['nova', 'popular']);
+  });
 });

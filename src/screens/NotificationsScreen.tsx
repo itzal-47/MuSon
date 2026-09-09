@@ -3,6 +3,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useAuth } from '@/context/AuthContext';
 import { fetchIsAdmin } from '@/lib/admin';
 import { timeAgo } from '@/lib/format';
+import { isAdminNotificationType } from '@/lib/notifications';
 import {
   ArrowLeft, Bell, UserPlus, Music, Heart, MessageCircle, BadgeCheck, Check,
   Flag, Wallet, LifeBuoy, Shield,
@@ -10,8 +11,6 @@ import {
 import type { AppNotification, NotificationTipo } from '@/types/database';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-
-const ADMIN_TIPOS: NotificationTipo[] = ['admin_denuncia', 'admin_verificacao', 'admin_pagamento', 'admin_suporte'];
 
 export default function NotificationsScreen() {
   const navigate = useNavigate();
@@ -69,7 +68,7 @@ export default function NotificationsScreen() {
   }
 
   const visibleNotifications = notifications.filter((n) =>
-    tab === 'admin' ? ADMIN_TIPOS.includes(n.tipo) : !ADMIN_TIPOS.includes(n.tipo)
+    tab === 'admin' ? isAdminNotificationType(n.tipo) : !isAdminNotificationType(n.tipo)
   );
 
   const handleClick = (n: AppNotification) => {
@@ -186,7 +185,7 @@ function NotificationRow({
 }) {
   const icon = getIcon(notification.tipo);
   const label = getLabel(notification.tipo, sender);
-  const isAdminTipo = ADMIN_TIPOS.includes(notification.tipo);
+  const isAdminTipo = isAdminNotificationType(notification.tipo);
 
   return (
     <button

@@ -5,13 +5,11 @@ import { supabase } from '@/lib/supabase';
 import { uploadTrackAudio, uploadTrackCover } from '@/lib/storageService';
 import { getAudioDuration } from '@/lib/tracks';
 import { usePlatformSettings } from '@/context/PlatformSettingsContext';
+import { validateAudioFile, validateImageFile } from '@/lib/validation';
 import {
   ArrowLeft, Music, Upload, Image as ImageIcon, AlertCircle,
   Check, Loader2, FileAudio,
 } from 'lucide-react';
-
-const MAX_AUDIO_SIZE = 20 * 1024 * 1024; // 20MB
-const VALID_AUDIO_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/m4a', 'audio/x-m4a', 'audio/mp4'];
 
 function defaultScheduleValue(): string {
   const d = new Date(Date.now() + 60 * 60 * 1000); // daqui a 1 hora, valor inicial sugerido
@@ -56,12 +54,9 @@ export default function UploadScreen() {
   const handleAudio = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!VALID_AUDIO_TYPES.includes(file.type) && !file.name.match(/\.(mp3|wav|m4a)$/i)) {
-      setError('Formato não suportado. Usa MP3, WAV ou M4A.');
-      return;
-    }
-    if (file.size > MAX_AUDIO_SIZE) {
-      setError('O ficheiro é demasiado grande. Máximo 20MB.');
+    const validacao = validateAudioFile(file);
+    if (!validacao.valid) {
+      setError(validacao.error);
       return;
     }
     setError(null);
@@ -74,8 +69,9 @@ export default function UploadScreen() {
   const handleCover = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setError('A capa deve ser uma imagem.');
+    const validacao = validateImageFile(file);
+    if (!validacao.valid) {
+      setError(validacao.error);
       return;
     }
     setError(null);
