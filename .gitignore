@@ -1,1 +1,14 @@
 node_modules/
+
+# Ambiente e Segredos
+.env
+.env.local
+
+# Produção / Builds
+dist/
+build/
+
+# Logs e IDEs
+npm-debug.log*
+.vscode/
+.idea/
